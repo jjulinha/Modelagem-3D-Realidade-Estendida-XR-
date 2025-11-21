@@ -338,6 +338,14 @@
             for (let i = 0; i < 80; i++) { ctx.beginPath(); ctx.moveTo(Math.random() * 512, Math.random() * 512); ctx.lineTo(Math.random() * 512, Math.random() * 512); ctx.stroke(); }
             const pcbTex = new THREE.CanvasTexture(cvs);
 
+            // Heatsink Fins Texture (Stripes)
+            const cvsF = document.createElement('canvas'); cvsF.width = 64; cvsF.height = 64;
+            const ctxF = cvsF.getContext('2d');
+            ctxF.fillStyle = '#ccc'; ctxF.fillRect(0, 0, 64, 64);
+            ctxF.fillStyle = '#888';
+            for (let i = 0; i < 64; i += 4) { ctxF.fillRect(i, 0, 2, 64); }
+            const finsTex = new THREE.CanvasTexture(cvsF);
+
             // RGB Rainbow
             const cvsH = document.createElement('canvas'); cvsH.width = 512; cvsH.height = 1;
             const ctxH = cvsH.getContext('2d');
@@ -355,6 +363,7 @@
             mats.alum = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.3, metalness: 0.8 });
             mats.copper = new THREE.MeshStandardMaterial({ color: 0xffaa77, roughness: 0.25, metalness: 1.0 });
             mats.blackPlastic = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6, metalness: 0.1 });
+            mats.fins = new THREE.MeshStandardMaterial({ map: finsTex, color: 0xdddddd, roughness: 0.5, metalness: 0.6 });
             mats.rgbH = new THREE.MeshStandardMaterial({ map: rgbTextureH, emissive: 0xffffff, emissiveMap: rgbTextureH, emissiveIntensity: 2.5, roughness: 0.2, metalness: 0.0 });
         }
 
@@ -403,11 +412,21 @@
             const eye = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.05), mats.rgbH);
             eye.rotation.x = -Math.PI / 2; eye.position.set(0.05, 0.016, 0.08); g.add(eye);
 
-            // Slots
+            // Slots & Details
             for (let i = 0; i < 3; i++) {
                 const s = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.008, 0.012), mats.metal);
                 s.position.set(0.01, 0.006, 0.04 + (i * 0.06)); g.add(s);
             }
+
+            // Capacitors (Gold)
+            const capGeo = new THREE.CylinderGeometry(0.003, 0.003, 0.008, 16);
+            const capMat = new THREE.MeshStandardMaterial({ color: 0xffcc00, roughness: 0.2, metalness: 1.0 });
+            for (let i = 0; i < 8; i++) {
+                const c = new THREE.Mesh(capGeo, capMat);
+                c.position.set(-0.06, 0.006, 0.05 + (i * 0.015));
+                g.add(c);
+            }
+
             contentGroup.add(g);
         }
 
@@ -430,10 +449,9 @@
                 g.add(pipe);
             }
 
-            // Tower Heatsink (Black)
-            const tower = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.06), mats.blackMetal);
+            // Tower Heatsink (Fins Texture)
+            const tower = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.06), mats.fins);
             tower.position.set(0, 0.08, 0);
-            // Texture for fins
             g.add(tower);
 
             // Top Plate (Black with Logo)
@@ -442,75 +460,89 @@
             const logo = new THREE.Mesh(new THREE.PlaneGeometry(0.04, 0.02), mats.rgbH);
             logo.rotation.x = -Math.PI / 2; logo.position.set(0, 0.145, 0); g.add(logo);
 
-            // Fan (Front)
-            const fanGroup = new THREE.Group();
-            fanGroup.position.set(0, 0.08, 0.035);
-
             // Fan Frame
             const frame = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.025), mats.blackPlastic);
-            fanGroup.add(frame);
+            frame.position.set(0, 0.08, 0.045);
+            g.add(frame);
 
-            // RGB Ring (Thin ring on frame)
+            // RGB Ring (Static on Frame)
             const ring = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.002, 32, 64), mats.rgbH);
-            ring.position.z = 0.013; fanGroup.add(ring);
+            ring.position.set(0, 0.08, 0.058);
+            g.add(ring);
 
-            // Blades (Translucent Black)
-            const bladeGroup = new THREE.Group();
+            // Blades (Spinning inside)
+            const fanGroup = new THREE.Group();
+            fanGroup.position.set(0, 0.08, 0.05); // Center of fan
+
+            // Hub
+            const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.005, 32), mats.blackPlastic);
+            hub.rotation.x = Math.PI / 2; fanGroup.add(hub);
+
+            // Blades
             for (let k = 0; k < 9; k++) {
-                const b = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.012, 0.002), mats.blackPlastic);
-                b.position.x = 0.028; b.rotation.x = 0.4;
+                const b = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.012, 0.001), mats.blackPlastic);
+                b.material.transparent = true; b.material.opacity = 0.9;
+                b.position.x = 0.025; b.rotation.x = 0.4;
                 const p = new THREE.Group();
                 p.rotation.z = (k / 9) * Math.PI * 2;
                 p.add(b);
-                bladeGroup.add(p);
+                fanGroup.add(p);
             }
-            bladeGroup.position.z = 0.005;
-            fanGroup.add(bladeGroup);
-            fans.push(bladeGroup);
-
+            fans.push(fanGroup);
             g.add(fanGroup);
+
             contentGroup.add(g);
         }
 
         function buildGPU() {
-            // WHITE ROG STRIX STYLE
+            // WHITE ROG STRIX STYLE (Skeleton + Armor)
             const g = new THREE.Group();
 
-            // Main Body (White)
-            const body = new THREE.Mesh(new RoundedBoxGeometry(0.32, 0.06, 0.13, 4, 0.01), mats.whitePlastic);
-            body.position.y = 0.03; body.castShadow = true; g.add(body);
+            // 1. Heatsink Core (Visible Fins)
+            const heatsink = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.05, 0.11), mats.fins);
+            heatsink.position.y = 0.035; g.add(heatsink);
 
-            // Backplate (White Metal)
+            // 2. White Armor (Shroud)
+            // Top Frame
+            const topFrame = new THREE.Mesh(new RoundedBoxGeometry(0.32, 0.01, 0.13, 4, 0.005), mats.whitePlastic);
+            topFrame.position.y = 0.065; g.add(topFrame);
+
+            // Side Bar (RGB)
+            const sideBar = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.015, 0.005), mats.whitePlastic);
+            sideBar.position.set(0, 0.035, 0.065); g.add(sideBar);
+            const strip = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.005, 0.002), mats.rgbH);
+            strip.position.set(0, 0.035, 0.068); g.add(strip);
+
+            // Backplate
             const backplate = new THREE.Mesh(new RoundedBoxGeometry(0.32, 0.004, 0.13, 4, 0.005), mats.alum);
-            backplate.position.y = 0.062; g.add(backplate);
+            backplate.position.y = 0.005; g.add(backplate);
 
-            // Side RGB Bar (Full length)
-            const strip = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.01, 0.002), mats.rgbH);
-            strip.position.set(0, 0.03, 0.066); g.add(strip);
-
-            // 3 Fans
+            // 3. Fans (Recessed)
             for (let i = -1; i <= 1; i++) {
                 const xPos = i * 0.095;
 
-                // Chrome Ring around fan
-                const ring = new THREE.Mesh(new THREE.TorusGeometry(0.048, 0.002, 32, 64), mats.metal);
-                ring.rotation.x = -Math.PI / 2; ring.position.set(xPos, 0.061, 0); g.add(ring);
+                // Chrome Ring (On top of frame)
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.002, 32, 64), mats.metal);
+                ring.rotation.x = -Math.PI / 2; ring.position.set(xPos, 0.071, 0); g.add(ring);
+
+                // Fan Group (Slightly lower than frame)
+                const fGroup = new THREE.Group();
+                fGroup.position.set(xPos, 0.065, 0); // Recessed
+
+                // Hub (RGB)
+                const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.005, 32), mats.rgbH);
+                hub.rotation.x = Math.PI / 2; fGroup.add(hub);
 
                 // Blades (White)
-                const fGroup = new THREE.Group();
                 for (let k = 0; k < 11; k++) {
-                    const b = new THREE.Mesh(new THREE.BoxGeometry(0.042, 0.008, 0.001), mats.whitePlastic);
-                    b.position.x = 0.024; b.rotation.x = 0.4;
+                    const b = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.008, 0.001), mats.whitePlastic);
+                    b.position.x = 0.022; b.rotation.x = 0.4;
                     const p = new THREE.Group();
                     p.rotation.z = (k / 11) * Math.PI * 2;
                     p.add(b);
                     fGroup.add(p);
                 }
-                // RGB Center Hub
-                const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.005, 32), mats.rgbH);
-                hub.rotation.x = Math.PI / 2; fGroup.add(hub);
-
-                fGroup.rotation.x = -Math.PI / 2; fGroup.position.set(xPos, 0.058, 0);
+                fGroup.rotation.x = -Math.PI / 2;
                 g.add(fGroup);
                 fans.push(fGroup);
             }
@@ -522,11 +554,19 @@
             const g = new THREE.Group();
             for (let i = -1; i <= 1; i += 2) {
                 const stick = new THREE.Group();
+                // PCB Black
                 stick.add(new THREE.Mesh(new THREE.BoxGeometry(0.133, 0.035, 0.002), mats.pcb));
-                const heat = new THREE.Mesh(new RoundedBoxGeometry(0.135, 0.032, 0.006, 2, 0.001), mats.blackMetal);
-                heat.position.y = 0.002; stick.add(heat);
-                const rgb = new THREE.Mesh(new RoundedBoxGeometry(0.135, 0.01, 0.006, 2, 0.002), mats.rgbH);
+
+                // Heat Spreader (Layered)
+                const heatL = new THREE.Mesh(new RoundedBoxGeometry(0.135, 0.032, 0.002, 2, 0.001), mats.blackMetal);
+                heatL.position.set(0, 0.002, 0.002); stick.add(heatL);
+                const heatR = new THREE.Mesh(new RoundedBoxGeometry(0.135, 0.032, 0.002, 2, 0.001), mats.blackMetal);
+                heatR.position.set(0, 0.002, -0.002); stick.add(heatR);
+
+                // RGB Bar (Top)
+                const rgb = new THREE.Mesh(new RoundedBoxGeometry(0.135, 0.008, 0.006, 2, 0.002), mats.rgbH);
                 rgb.position.y = 0.022; stick.add(rgb);
+
                 stick.position.z = i * 0.01; g.add(stick);
             }
             g.position.y = 0.05; contentGroup.add(g);
@@ -572,8 +612,9 @@
                 }
             }
             if (contentGroup.visible || !renderer.xr.isPresenting) {
-                fans.forEach(f => f.rotation.z -= 0.2);
-                if (rgbTextureH) rgbTextureH.offset.x -= 0.015;
+                // SPIN FANS
+                fans.forEach(f => f.rotation.z -= 0.15);
+                if (rgbTextureH) rgbTextureH.offset.x -= 0.01;
             }
             renderer.render(scene, camera);
         }
