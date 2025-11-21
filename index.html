@@ -365,6 +365,16 @@
             mats.blackPlastic = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6, metalness: 0.1 });
             mats.fins = new THREE.MeshStandardMaterial({ map: finsTex, color: 0xdddddd, roughness: 0.5, metalness: 0.6 });
             mats.rgbH = new THREE.MeshStandardMaterial({ map: rgbTextureH, emissive: 0xffffff, emissiveMap: rgbTextureH, emissiveIntensity: 2.5, roughness: 0.2, metalness: 0.0 });
+
+            // Fan Blade Material (Frosted Acrylic)
+            mats.fanBlade = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff, roughness: 0.4, metalness: 0.1,
+                transmission: 0.6, thickness: 0.002, transparent: true, opacity: 0.9
+            });
+            mats.fanBladeBlack = new THREE.MeshPhysicalMaterial({
+                color: 0x222222, roughness: 0.4, metalness: 0.1,
+                transmission: 0.4, thickness: 0.002, transparent: true, opacity: 0.95
+            });
         }
 
         window.selectModel = function (type) {
@@ -388,6 +398,54 @@
             if (type === 'cpu') buildCPU_Cooler();
             if (type === 'gpu') buildGPU();
             if (type === 'ram') buildRAM();
+        }
+
+        // --- GEOMETRIA AVANÇADA DE VENTOINHA ---
+
+        function createFanBlade(radius, colorMat) {
+            // Cria uma lâmina curva e aerodinâmica
+            const shape = new THREE.Shape();
+            // Perfil da lâmina (vista de cima)
+            shape.moveTo(0, 0);
+            shape.bezierCurveTo(radius * 0.2, radius * 0.1, radius * 0.5, radius * 0.4, radius, radius * 0.3);
+            shape.bezierCurveTo(radius * 0.9, radius * 0.6, radius * 0.4, radius * 0.5, 0, 0.1);
+
+            const extrudeSettings = {
+                steps: 2, depth: 0.002, bevelEnabled: true, bevelThickness: 0.0005, bevelSize: 0.0005, bevelSegments: 2
+            };
+
+            const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            // Ajustar centro e rotação para "twist"
+            geo.translate(0, -0.05 * radius, 0); // Offset do hub
+
+            const blade = new THREE.Mesh(geo, colorMat);
+            blade.rotation.x = 0.2; // Ângulo de ataque
+            return blade;
+        }
+
+        function createFanAssembly(radius, bladeCount, colorMat) {
+            const group = new THREE.Group();
+            const hubRadius = radius * 0.25;
+
+            // Hub Central
+            const hub = new THREE.Mesh(new THREE.CylinderGeometry(hubRadius, hubRadius, 0.008, 32), mats.blackPlastic);
+            hub.rotation.x = Math.PI / 2;
+            group.add(hub);
+
+            // Sticker Holográfico
+            const sticker = new THREE.Mesh(new THREE.CircleGeometry(hubRadius * 0.8, 32), mats.metal);
+            sticker.position.z = 0.005;
+            group.add(sticker);
+
+            // Blades
+            for (let i = 0; i < bladeCount; i++) {
+                const blade = createFanBlade(radius, colorMat);
+                const pivot = new THREE.Group();
+                pivot.rotation.z = (i / bladeCount) * Math.PI * 2;
+                pivot.add(blade);
+                group.add(pivot);
+            }
+            return group;
         }
 
         // --- MODELOS ---
@@ -470,26 +528,11 @@
             ring.position.set(0, 0.08, 0.058);
             g.add(ring);
 
-            // Blades (Spinning inside)
-            const fanGroup = new THREE.Group();
-            fanGroup.position.set(0, 0.08, 0.05); // Center of fan
-
-            // Hub
-            const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.005, 32), mats.blackPlastic);
-            hub.rotation.x = Math.PI / 2; fanGroup.add(hub);
-
-            // Blades
-            for (let k = 0; k < 9; k++) {
-                const b = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.012, 0.001), mats.blackPlastic);
-                b.material.transparent = true; b.material.opacity = 0.9;
-                b.position.x = 0.025; b.rotation.x = 0.4;
-                const p = new THREE.Group();
-                p.rotation.z = (k / 9) * Math.PI * 2;
-                p.add(b);
-                fanGroup.add(p);
-            }
-            fans.push(fanGroup);
-            g.add(fanGroup);
+            // HYPER-REALISTIC FAN (Black Translucent)
+            const fan = createFanAssembly(0.055, 9, mats.fanBladeBlack);
+            fan.position.set(0, 0.08, 0.045);
+            fans.push(fan);
+            g.add(fan);
 
             contentGroup.add(g);
         }
@@ -517,7 +560,7 @@
             const backplate = new THREE.Mesh(new RoundedBoxGeometry(0.32, 0.004, 0.13, 4, 0.005), mats.alum);
             backplate.position.y = 0.005; g.add(backplate);
 
-            // 3. Fans (Recessed)
+            // 3. Fans (Recessed & Realistic)
             for (let i = -1; i <= 1; i++) {
                 const xPos = i * 0.095;
 
@@ -525,26 +568,12 @@
                 const ring = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.002, 32, 64), mats.metal);
                 ring.rotation.x = -Math.PI / 2; ring.position.set(xPos, 0.071, 0); g.add(ring);
 
-                // Fan Group (Slightly lower than frame)
-                const fGroup = new THREE.Group();
-                fGroup.position.set(xPos, 0.065, 0); // Recessed
-
-                // Hub (RGB)
-                const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.005, 32), mats.rgbH);
-                hub.rotation.x = Math.PI / 2; fGroup.add(hub);
-
-                // Blades (White)
-                for (let k = 0; k < 11; k++) {
-                    const b = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.008, 0.001), mats.whitePlastic);
-                    b.position.x = 0.022; b.rotation.x = 0.4;
-                    const p = new THREE.Group();
-                    p.rotation.z = (k / 11) * Math.PI * 2;
-                    p.add(b);
-                    fGroup.add(p);
-                }
-                fGroup.rotation.x = -Math.PI / 2;
-                g.add(fGroup);
-                fans.push(fGroup);
+                // Fan Assembly (White Translucent)
+                const fan = createFanAssembly(0.042, 11, mats.fanBlade);
+                fan.rotation.x = -Math.PI / 2;
+                fan.position.set(xPos, 0.065, 0);
+                g.add(fan);
+                fans.push(fan);
             }
             g.rotation.x = -Math.PI / 2; g.position.y = 0.05;
             contentGroup.add(g);
