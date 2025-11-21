@@ -3,93 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Hardware AR - Ultra Detail</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;900&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <title>AR Hardware Suite v3</title>
+    <!-- Fonte Futurista -->
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #00f3ff; --glass: rgba(15, 15, 20, 0.9); }
-        body { margin: 0; overflow: hidden; background: #050505; font-family: 'Inter', sans-serif; user-select: none; }
-        
-        /* UI Superior */
-        #ui-top {
+        :root { --neon: #00ff9d; --bg: #050505; }
+        body { margin: 0; overflow: hidden; background: var(--bg); font-family: 'Rajdhani', sans-serif; user-select: none; }
+
+        /* Interface Superior */
+        #ui-container {
             position: absolute; top: 0; left: 0; width: 100%;
-            padding: 20px; box-sizing: border-box;
-            display: flex; justify-content: center; gap: 15px;
-            z-index: 10; pointer-events: none;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
+            padding: 15px; box-sizing: border-box;
+            background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%);
+            display: flex; justify-content: center; gap: 10px;
+            z-index: 10; pointer-events: none; /* Permite clicar através */
         }
 
-        .selector-btn {
+        .obj-btn {
             pointer-events: auto;
-            width: 70px; height: 70px;
             background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 16px;
-            color: #888; cursor: pointer;
+            backdrop-filter: blur(5px);
+            color: #888;
+            width: 75px; height: 65px;
+            border-radius: 12px;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.2s ease;
+            cursor: pointer;
         }
-        .selector-btn i { font-size: 24px; margin-bottom: 4px; filter: grayscale(1); transition: 0.3s; }
-        .selector-btn span { font-size: 10px; font-weight: 700; letter-spacing: 1px; }
 
-        .selector-btn.active {
-            border-color: var(--primary);
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
-            transform: translateY(5px);
-            color: white;
+        .obj-btn.active {
+            border-color: var(--neon); color: white;
+            background: rgba(0, 255, 157, 0.1);
+            box-shadow: 0 0 15px rgba(0, 255, 157, 0.2);
+            transform: translateY(2px);
         }
-        .selector-btn.active i { filter: grayscale(0); text-shadow: 0 0 10px var(--primary); }
 
-        /* Loader & Hints */
-        #loader {
-            position: absolute; inset: 0; background: #020202; z-index: 100;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: var(--primary); font-family: 'Orbitron';
-        }
-        .spinner {
-            width: 40px; height: 40px; border: 4px solid #333;
-            border-top-color: var(--primary); border-radius: 50%;
-            animation: spin 1s infinite linear; margin-bottom: 20px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .obj-btn span { font-size: 22px; margin-bottom: 2px; }
+        .obj-btn label { font-size: 10px; font-weight: 700; letter-spacing: 1px; }
 
-        #ar-hint {
+        /* Avisos e Loader */
+        #status-msg {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.8); border: 1px solid var(--primary);
-            color: white; padding: 15px 30px; border-radius: 30px;
-            font-weight: 600; display: none; pointer-events: none;
+            background: rgba(0,0,0,0.8); border: 1px solid var(--neon);
+            color: white; padding: 15px 25px; border-radius: 30px;
+            display: none; text-align: center; font-weight: bold; pointer-events: none;
         }
 
-        /* Ajuste botão AR */
+        #loader {
+            position: absolute; inset: 0; background: #000; z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        
+        .spinner {
+            width: 40px; height: 40px; border: 4px solid #222; border-top: 4px solid var(--neon);
+            border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px;
+        }
+        @keyframes spin { to {transform: rotate(360deg);} }
+
+        #error-log {
+            color: #ff4444; font-family: monospace; font-size: 12px; 
+            margin-top: 20px; max-width: 80%; text-align: center; display: none;
+        }
+
+        /* Botão AR Nativo */
         button#ARButton {
-            bottom: 40px !important; width: 200px !important;
-            background: var(--primary) !important; color: black !important;
-            font-family: 'Orbitron' !important; font-weight: 900 !important;
-            border-radius: 4px !important; border: none !important;
-            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            bottom: 30px !important; width: 180px !important;
+            background: var(--neon) !important; color: black !important;
+            border-radius: 4px !important; font-weight: 800 !important;
+            text-transform: uppercase !important;
         }
     </style>
 </head>
 <body>
 
-    <div id="ui-top">
-        <div class="selector-btn active" onclick="loadObj('mobo')">
-            <i>🎛️</i><span>MOBO</span>
+    <!-- Menu de Seleção -->
+    <div id="ui-container">
+        <div class="obj-btn active" onclick="window.changeModel('mobo')">
+            <span>🎛️</span><label>MOBO</label>
         </div>
-        <div class="selector-btn" onclick="loadObj('gpu')">
-            <i>📼</i><span>GPU</span>
+        <div class="obj-btn" onclick="window.changeModel('gpu')">
+            <span>📼</span><label>GPU</label>
         </div>
-        <div class="selector-btn" onclick="loadObj('ram')">
-            <i>💾</i><span>RAM</span>
+        <div class="obj-btn" onclick="window.changeModel('ram')">
+            <span>💾</span><label>RAM</label>
         </div>
-        <div class="selector-btn" onclick="loadObj('cooler')">
-            <i>❄️</i><span>COOLER</span>
+        <div class="obj-btn" onclick="window.changeModel('cooler')">
+            <span>❄️</span><label>COOLER</label>
         </div>
     </div>
 
-    <div id="ar-hint">Detectando chão...</div>
-    <div id="loader"><div class="spinner"></div>GERANDO ASSETS...</div>
+    <div id="status-msg">Detectando chão...</div>
+    
+    <div id="loader">
+        <div class="spinner"></div>
+        <div id="loading-text">INICIALIZANDO ENGINE...</div>
+        <div id="error-log"></div>
+    </div>
 
+    <!-- Import Map (Versão Estável r160) -->
     <script type="importmap">
         {
             "imports": {
@@ -105,17 +117,34 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
+        // Variáveis Globais
         let camera, scene, renderer;
         let contentGroup, reticle;
         let hitTestSource = null, hitTestSourceRequested = false;
         let objectPlaced = false;
-        let animatedParts = []; // Array para guardar coisas que giram
+        
+        // Arrays de animação
+        let rotatingParts = []; 
+        let pulsatingParts = [];
 
         // Cache de Materiais
         const mats = {};
 
-        init();
-        animate();
+        // Inicialização Segura
+        try {
+            init();
+            animate();
+        } catch (e) {
+            showError("Erro Crítico: " + e.message);
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('error-log');
+            el.style.display = 'block';
+            el.innerText = msg;
+            document.getElementById('loading-text').style.display = 'none';
+            document.querySelector('.spinner').style.display = 'none';
+        }
 
         function init() {
             const container = document.createElement('div');
@@ -125,15 +154,13 @@
 
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-            // Iluminação High-End
-            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x222222, 0.8);
+            // Iluminação
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x222222, 1);
             scene.add(hemiLight);
 
-            const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
-            dirLight.position.set(1, 4, 2);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 3);
+            dirLight.position.set(1, 3, 1);
             dirLight.castShadow = true;
-            dirLight.shadow.mapSize.width = 2048;
-            dirLight.shadow.mapSize.height = 2048;
             scene.add(dirLight);
 
             // Renderer
@@ -142,7 +169,6 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.xr.enabled = true;
             renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
             container.appendChild(renderer.domElement);
 
@@ -155,333 +181,238 @@
             // Materiais
             createMaterials();
 
-            // Grupo Principal
+            // Grupo de Conteúdo
             contentGroup = new THREE.Group();
             scene.add(contentGroup);
 
-            // Carregar Padrão
-            loadObj('mobo');
-
-            // Retículo
+            // Mira (Retículo)
             reticle = new THREE.Mesh(
                 new THREE.RingGeometry(0.1, 0.11, 32).rotateX(-Math.PI / 2),
-                new THREE.MeshBasicMaterial({ color: 0x00f3ff })
+                new THREE.MeshBasicMaterial({ color: 0x00ff9d })
             );
             reticle.matrixAutoUpdate = false;
             reticle.visible = false;
             scene.add(reticle);
+
+            // Modelo Inicial
+            buildMobo(); // Carrega mobo direto na init
 
             // Interação
             const controller = renderer.xr.getController(0);
             controller.addEventListener('select', onSelect);
             scene.add(controller);
 
-            // Controles PC
+            // Controles Orbit (PC)
             const controls = new OrbitControls(camera, renderer.domElement);
             controls.target.set(0, 0.05, 0);
             controls.update();
 
-            // Listeners
+            // Eventos AR
             renderer.xr.addEventListener('sessionstart', () => {
-                document.getElementById('ar-hint').style.display = 'block';
+                document.getElementById('status-msg').style.display = 'block';
                 contentGroup.visible = false;
                 objectPlaced = false;
             });
             
+            renderer.xr.addEventListener('sessionend', () => {
+                document.getElementById('status-msg').style.display = 'none';
+                contentGroup.visible = true;
+                contentGroup.position.set(0,0,0);
+                contentGroup.rotation.set(0,0,0);
+                camera.position.set(0, 0.3, 0.3);
+                camera.lookAt(0,0,0);
+            });
+
             window.addEventListener('resize', onWindowResize);
+            
+            // Remover Loader se tudo deu certo
             document.getElementById('loader').style.display = 'none';
-
-            // Expor função global para os botões HTML
-            window.loadObj = (type) => {
-                // UI Updates
-                document.querySelectorAll('.selector-btn').forEach(b => b.classList.remove('active'));
-                event.currentTarget.classList.add('active');
-                
-                // Logic
-                contentGroup.clear();
-                animatedParts = []; // Limpa lista de animação
-
-                let mesh;
-                if(type === 'mobo') mesh = buildDetailedMobo();
-                if(type === 'gpu') mesh = buildDetailedGPU();
-                if(type === 'ram') mesh = buildDetailedRAM();
-                if(type === 'cooler') mesh = buildDetailedCooler();
-                
-                contentGroup.add(mesh);
-            };
         }
 
         function createMaterials() {
-            // Textura PCB Procedural de Alta Resolução
-            const canvas = document.createElement('canvas'); canvas.width = 1024; canvas.height = 1024;
+            // Textura Procedural (Rápida)
+            const canvas = document.createElement('canvas'); canvas.width=512; canvas.height=512;
             const ctx = canvas.getContext('2d');
-            // Base
-            ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0,0,1024,1024);
-            // Traces
-            ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 3;
-            for(let i=0; i<300; i++) {
-                ctx.beginPath(); 
-                const x = Math.random()*1024; const y = Math.random()*1024;
-                ctx.moveTo(x, y);
-                if(Math.random()>0.5) ctx.lineTo(x + (Math.random()*200-100), y);
-                else ctx.lineTo(x, y + (Math.random()*200-100));
-                ctx.stroke();
+            ctx.fillStyle='#111'; ctx.fillRect(0,0,512,512);
+            ctx.strokeStyle='#222'; ctx.lineWidth=3;
+            for(let i=0; i<50; i++){
+                ctx.beginPath(); ctx.moveTo(Math.random()*512,Math.random()*512);
+                ctx.lineTo(Math.random()*512,Math.random()*512); ctx.stroke();
             }
-            // ICs / Chips
-            ctx.fillStyle = '#050505';
-            for(let i=0; i<50; i++) {
-                ctx.fillRect(Math.random()*1000, Math.random()*1000, 20, 20);
-            }
-            const pcbMap = new THREE.CanvasTexture(canvas);
+            const tex = new THREE.CanvasTexture(canvas);
 
-            mats.pcb = new THREE.MeshStandardMaterial({ map: pcbMap, roughness: 0.6, metalness: 0.1 });
-            mats.metalDark = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, metalness: 0.8 });
-            mats.aluminum = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.3, metalness: 0.7 });
-            mats.heatsink = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.4, metalness: 0.6 });
-            mats.copper = new THREE.MeshStandardMaterial({ color: 0xb87333, roughness: 0.3, metalness: 0.8 });
-            mats.plastic = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.5 });
-            mats.gold = new THREE.MeshStandardMaterial({ color: 0xffcc00, roughness: 0.2, metalness: 1.0 });
-            mats.rgb = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0x00f3ff, emissiveIntensity: 2 });
+            mats.pcb = new THREE.MeshStandardMaterial({ map: tex, color: 0x222222, roughness: 0.4 });
+            mats.metal = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, metalness: 0.9 });
+            mats.alum = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.3, metalness: 0.7 });
+            mats.copper = new THREE.MeshStandardMaterial({ color: 0xb87333, roughness: 0.4, metalness: 0.6 });
+            mats.rgb = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0x00ff9d, emissiveIntensity: 2 });
+            mats.gold = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.1, metalness: 1.0 });
         }
 
-        // --- CONSTRUTORES 3D DE ALTA FIDELIDADE ---
+        // --- FUNÇÃO DE TROCA ---
+        window.changeModel = function(type) {
+            // Atualizar UI
+            document.querySelectorAll('.obj-btn').forEach(b => b.classList.remove('active'));
+            event.currentTarget.classList.add('active');
 
-        function buildDetailedMobo() {
+            // Limpar cena
+            contentGroup.clear();
+            rotatingParts = [];
+            pulsatingParts = [];
+
+            // Carregar novo
+            try {
+                if(type === 'mobo') buildMobo();
+                if(type === 'gpu') buildGPU();
+                if(type === 'ram') buildRAM();
+                if(type === 'cooler') buildCooler();
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        // --- BUILDERS (CORRIGIDOS) ---
+
+        function buildMobo() {
             const g = new THREE.Group();
-            
-            // PCB Principal (ATX)
-            const pcb = new THREE.Mesh(new RoundedBoxGeometry(0.24, 0.004, 0.30, 4, 0.01), mats.pcb);
-            pcb.receiveShadow = true; pcb.castShadow = true;
-            g.add(pcb);
-
-            // Heatsinks VRM (Geometria Complexa)
-            const shape = new THREE.Shape();
-            shape.moveTo(0,0); shape.lineTo(0.03, 0); shape.lineTo(0.03, 0.10); shape.lineTo(0, 0.10);
-            const extrudeSettings = { depth: 0.03, bevelEnabled: true, bevelSize: 0.002, bevelThickness: 0.002 };
-            const vrmGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-            const vrmLeft = new THREE.Mesh(vrmGeo, mats.heatsink);
-            vrmLeft.rotation.x = -Math.PI/2; // Deitar para extrudar pra cima
-            vrmLeft.position.set(-0.09, 0.002, 0.04); // Ajuste fino
-            g.add(vrmLeft);
-
-            // Slots de RAM (4 pentes)
-            const slotGeo = new THREE.BoxGeometry(0.008, 0.01, 0.13);
-            for(let i=0; i<4; i++) {
-                const slot = new THREE.Mesh(slotGeo, mats.plastic);
-                slot.position.set(0.03 + (i*0.012), 0.005, -0.05);
-                g.add(slot);
-            }
-
-            // Socket CPU (Detalhe)
-            const socket = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.005, 0.06), mats.plastic);
-            socket.position.set(-0.03, 0.004, -0.05);
-            g.add(socket);
-            const latch = new THREE.Mesh(new THREE.BoxGeometry(0.005, 0.004, 0.07), mats.aluminum);
-            latch.position.set(0.005, 0.004, -0.05);
-            g.add(latch);
-
-            // Capacitores de Áudio (Cilindros dourados)
-            const capGeo = new THREE.CylinderGeometry(0.004, 0.004, 0.008, 16);
-            for(let i=0; i<5; i++) {
-                const cap = new THREE.Mesh(capGeo, mats.gold);
-                cap.position.set(-0.09 + (i*0.006), 0.006, 0.12);
-                g.add(cap);
-            }
-
-            // Chipset com Logo RGB
-            const chipset = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.01, 0.06), mats.heatsink);
-            chipset.position.set(0.05, 0.006, 0.08);
-            g.add(chipset);
-            const logo = new THREE.Mesh(new THREE.PlaneGeometry(0.04, 0.02), mats.rgb);
-            logo.rotation.x = -Math.PI/2;
-            logo.position.set(0.05, 0.012, 0.08);
-            g.add(logo);
-
-            return g;
-        }
-
-        function buildDetailedGPU() {
-            const g = new THREE.Group();
-            
-            // Carenagem Principal (Shroud) - Curvas
-            const shroudShape = new THREE.Shape();
-            shroudShape.moveTo(0,0);
-            shroudShape.lineTo(0.28, 0);
-            shroudShape.lineTo(0.30, 0.02); // Bico angulado
-            shroudShape.lineTo(0.30, 0.11);
-            shroudShape.lineTo(0, 0.13);
-            const shroudGeo = new THREE.ExtrudeGeometry(shroudShape, { depth: 0.05, bevelEnabled: true, bevelSize: 0.005 });
-            const shroud = new THREE.Mesh(shroudGeo, mats.metalDark);
-            shroud.rotation.x = Math.PI/2; 
-            shroud.position.set(-0.15, 0.05, 0.06); // Centralizar
-            g.add(shroud);
-
-            // Ventoinhas (Fans) - CORREÇÃO DE ROTAÇÃO
-            // Criamos a geometria da ventoinha centrada em (0,0,0)
-            const fanGroupGeo = new THREE.Group();
-            const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.01, 16), mats.plastic);
-            fanGroupGeo.add(hub);
-            
-            const bladeGeo = new THREE.BoxGeometry(0.04, 0.002, 0.01);
-            for(let i=0; i<9; i++) {
-                const blade = new THREE.Mesh(bladeGeo, mats.plastic);
-                blade.position.set(0.025, 0, 0); // Afasta do centro
-                
-                // Pivô auxiliar para girar a pá
-                const pivot = new THREE.Group();
-                pivot.rotation.y = (i/9) * Math.PI * 2; // Gira ao redor do centro
-                pivot.add(blade);
-                
-                blade.rotation.x = 0.4; // Inclinação da pá (vento)
-                fanGroupGeo.add(pivot);
-            }
-
-            // Adicionar 3 fans posicionadas corretamente no Shroud
-            for(let i=0; i<3; i++) {
-                const fan = fanGroupGeo.clone();
-                // Posicionar a fan no local final
-                fan.position.set((i * 0.095) - 0.095, 0.051, 0.065); // Y é altura do chão, Z é profundidade
-                fan.rotation.x = Math.PI/2; // Virar para frente
-                
-                g.add(fan);
-                animatedParts.push(fan); // Adiciona à lista de rotação
-                
-                // Anel RGB ao redor da fan
-                const ring = new THREE.Mesh(new THREE.TorusGeometry(0.042, 0.001, 16, 32), mats.rgb);
-                ring.position.copy(fan.position);
-                ring.rotation.x = Math.PI/2;
-                g.add(ring);
-            }
-
-            // Backplate
-            const plate = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.13, 0.002), mats.aluminum);
-            plate.rotation.x = Math.PI/2;
-            plate.position.set(0, 0.10, 0);
-            g.add(plate);
-
-            // Posição final da GPU no mundo
-            g.position.y = 0.02;
-
-            return g;
-        }
-
-        function buildDetailedCooler() {
-            const g = new THREE.Group();
-
-            // Base contato
-            const base = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.01, 0.04), mats.copper);
-            g.add(base);
-
-            // Heatpipes
-            const pipeGeo = new THREE.CylinderGeometry(0.003, 0.003, 0.15, 16);
-            for(let i=0; i<4; i++) {
-                const p = new THREE.Mesh(pipeGeo, mats.copper);
-                p.position.set((i*0.01)-0.015, 0.07, 0);
-                g.add(p);
-            }
-
-            // Aletas (Fins) - Alta densidade
-            const finGeo = new THREE.BoxGeometry(0.06, 0.001, 0.12);
-            const finsGroup = new THREE.Group();
-            for(let i=0; i<40; i++) {
-                const fin = new THREE.Mesh(finGeo, mats.aluminum);
-                fin.position.y = 0.02 + (i*0.0035);
-                finsGroup.add(fin);
-            }
-            g.add(finsGroup);
-
-            // Fan frontal (separada para girar certo)
-            const fanFrame = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 0.025), mats.plastic);
-            fanFrame.position.set(0, 0.08, 0.075);
-            g.add(fanFrame);
-
-            // Hélice RGB
-            const bladeGeo = new THREE.CylinderGeometry(0.055, 0.055, 0.005, 8, 1, true);
-            // Textura de hélice rápida (blur)
-            const bladeMat = new THREE.MeshBasicMaterial({ 
-                color: 0x00f3ff, side: THREE.DoubleSide, transparent: true, opacity: 0.8 
-            });
-            const blade = new THREE.Mesh(bladeGeo, bladeMat);
-            blade.rotation.x = Math.PI/2;
-            
-            // O Ponto chave: O objeto 'blade' tem centro em 0,0,0. 
-            // Movemos ele para a posição final DENTRO do grupo, mas não o transformamos.
-            // Para animar, vamos criar um pivot.
-            
-            const pivot = new THREE.Group();
-            pivot.position.set(0, 0.08, 0.088); // Posição final do centro da ventoinha
-            pivot.add(blade); // Adiciona blade no centro do pivot
-            
-            g.add(pivot);
-            // Agora giramos o pivot.blade (que está em 0 relative ao pivot)
-            // Ops, blade geometry é cilindro. Vamos fazer pás reais pra ficar bonito.
-            
-            pivot.remove(blade); // Remove o cilindro feio
-            
-            // Criar pás reais no pivot
-            for(let i=0; i<7; i++) {
-                const b = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.05, 0.002), mats.rgb);
-                b.position.y = 0.03; // Afasta do centro
-                const p = new THREE.Group();
-                p.rotation.z = (i/7)*Math.PI*2;
-                p.add(b);
-                pivot.add(p);
-            }
-            
-            g.add(pivot);
-            animatedParts.push(pivot); // Adiciona o PIVOT à lista de animação
-
-            g.position.y = 0.005;
-            return g;
-        }
-
-        function buildDetailedRAM() {
-            const g = new THREE.Group();
-            // Pente 1
-            const s1 = createStick();
-            s1.position.z = -0.01;
-            g.add(s1);
-            // Pente 2
-            const s2 = createStick();
-            s2.position.z = 0.01;
-            g.add(s2);
-            
-            g.position.y = 0.03;
-            return g;
-        }
-
-        function createStick() {
-            const s = new THREE.Group();
             // PCB
-            const pcb = new THREE.Mesh(new THREE.BoxGeometry(0.133, 0.035, 0.002), mats.pcb);
-            s.add(pcb);
-            // Dissipador (Alumínio escovado com relevo)
-            const heatL = new THREE.Mesh(new THREE.BoxGeometry(0.133, 0.03, 0.004), mats.aluminum);
-            heatL.position.set(0, 0.002, 0.003);
-            s.add(heatL);
-            const heatR = new THREE.Mesh(new THREE.BoxGeometry(0.133, 0.03, 0.004), mats.aluminum);
-            heatR.position.set(0, 0.002, -0.003);
-            s.add(heatR);
-            // RGB Diffuser Topo
-            const rgb = new THREE.Mesh(new THREE.BoxGeometry(0.133, 0.005, 0.01), mats.rgb);
-            rgb.position.y = 0.018;
-            s.add(rgb);
-            return s;
+            const pcb = new THREE.Mesh(new RoundedBoxGeometry(0.24, 0.004, 0.30, 4, 0.01), mats.pcb);
+            pcb.receiveShadow = true; g.add(pcb);
+
+            // Heatsinks
+            const vrm1 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.02, 0.10), mats.metal);
+            vrm1.position.set(-0.08, 0.012, -0.05); g.add(vrm1);
+            
+            const vrm2 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 0.03), mats.metal);
+            vrm2.position.set(0, 0.012, -0.10); g.add(vrm2);
+
+            // Slots RAM
+            for(let i=0; i<4; i++) {
+                const s = new THREE.Mesh(new THREE.BoxGeometry(0.005, 0.008, 0.13), mats.metal);
+                s.position.set(0.04 + (i*0.01), 0.006, -0.05); g.add(s);
+            }
+
+            // PCIE
+            for(let i=0; i<3; i++) {
+                const p = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.008, 0.01), mats.metal);
+                p.position.set(0, 0.006, 0.04 + (i*0.06)); g.add(p);
+            }
+            
+            // Logo RGB
+            const logo = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.01, 0.05), mats.rgb);
+            logo.position.set(0.05, 0.005, 0.10); g.add(logo);
+            pulsatingParts.push(logo.material);
+
+            contentGroup.add(g);
         }
 
-        // --- LÓGICA CORE ---
+        function buildGPU() {
+            const g = new THREE.Group();
+            // Corpo
+            const body = new THREE.Mesh(new RoundedBoxGeometry(0.30, 0.05, 0.12, 4, 0.01), mats.metal);
+            body.position.y = 0.05; body.castShadow = true; g.add(body);
+
+            // 3 Fans (Rotação Corrigida)
+            for(let i=-1; i<=1; i++) {
+                // Criar o grupo da ventoinha na origem (0,0,0)
+                const fanGroup = new THREE.Group();
+                
+                // Hélice
+                const bladeGeo = new THREE.BoxGeometry(0.035, 0.002, 0.008);
+                for(let j=0; j<9; j++) {
+                    const blade = new THREE.Mesh(bladeGeo, mats.rgb); // RGB Fans
+                    blade.position.x = 0.02; // Deslocar do centro
+                    
+                    const pivot = new THREE.Group();
+                    pivot.rotation.y = (j/9) * Math.PI * 2;
+                    pivot.add(blade);
+                    fanGroup.add(pivot);
+                }
+                
+                // Posicionar o grupo inteiro no lugar certo na GPU
+                fanGroup.position.set(i*0.09, 0.076, 0); 
+                // Não giramos o fanGroup aqui, apenas o movemos.
+                // Vamos adicionar o fanGroup à lista de rotação, mas rotação Y LOCAL.
+                
+                g.add(fanGroup);
+                rotatingParts.push(fanGroup);
+            }
+
+            g.rotation.x = -Math.PI/2; // Deitar GPU
+            g.position.y = 0.01;
+            contentGroup.add(g);
+        }
+
+        function buildCooler() {
+            const g = new THREE.Group();
+            
+            // Aletas
+            const fin = new THREE.BoxGeometry(0.05, 0.001, 0.10);
+            for(let i=0; i<30; i++) {
+                const f = new THREE.Mesh(fin, mats.alum);
+                f.position.y = 0.03 + (i*0.003);
+                g.add(f);
+            }
+            
+            // Heatpipes
+            const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.12), mats.copper);
+            pipe.position.y = 0.07;
+            g.add(pipe);
+
+            // Fan Lateral (Rotação Corrigida)
+            const fanGroup = new THREE.Group();
+            const bladeGeo = new THREE.BoxGeometry(0.04, 0.002, 0.008);
+            for(let j=0; j<7; j++) {
+                const blade = new THREE.Mesh(bladeGeo, mats.rgb);
+                blade.position.x = 0.025;
+                const p = new THREE.Group();
+                p.rotation.z = (j/7)*Math.PI*2;
+                p.add(blade);
+                fanGroup.add(p);
+            }
+            
+            fanGroup.position.set(0, 0.08, 0.055); // Frente do cooler
+            g.add(fanGroup);
+            
+            // Importante: A hélice foi construída no plano XY (rotation Z).
+            // Precisamos animar rotation.z
+            fanGroup.userData = { axis: 'z' }; 
+            rotatingParts.push(fanGroup);
+
+            g.position.y = 0.01;
+            contentGroup.add(g);
+        }
+
+        function buildRAM() {
+            const g = new THREE.Group();
+            const stick = new THREE.Group();
+            
+            const pcb = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.035, 0.002), mats.pcb);
+            stick.add(pcb);
+            
+            const heat = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.03, 0.005), mats.alum);
+            heat.position.y = 0.002; stick.add(heat);
+            
+            const rgb = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.004, 0.006), mats.rgb);
+            rgb.position.y = 0.018; stick.add(rgb);
+            pulsatingParts.push(rgb.material);
+
+            stick.position.y = 0.04;
+            g.add(stick);
+            contentGroup.add(g);
+        }
+
+        // --- LOGICA AR ---
 
         function onSelect() {
             if (reticle.visible) {
                 contentGroup.position.setFromMatrixPosition(reticle.matrix);
-                // Virar para usuário
                 const p = new THREE.Vector3(); camera.getWorldPosition(p);
                 contentGroup.lookAt(p.x, contentGroup.position.y, p.z);
-                
                 contentGroup.visible = true;
                 objectPlaced = true;
-                document.getElementById('ar-hint').innerText = "Objeto fixado!";
-                setTimeout(() => document.getElementById('ar-hint').style.display='none', 2000);
+                document.getElementById('status-msg').innerText = "Objeto Fixado!";
+                setTimeout(() => document.getElementById('status-msg').style.display='none', 2000);
             }
         }
 
@@ -496,7 +427,7 @@
         }
 
         function render(timestamp, frame) {
-            // Hit Test AR
+            // AR Hit Test
             if (frame) {
                 const session = renderer.xr.getSession();
                 if (!hitTestSourceRequested) {
@@ -507,31 +438,31 @@
                 if (hitTestSource) {
                     const hits = frame.getHitTestResults(hitTestSource);
                     if (hits.length > 0) {
-                        const hit = hits[0];
                         reticle.visible = true;
-                        reticle.matrix.fromArray(hit.getPose(renderer.xr.getReferenceSpace()).transform.matrix);
-                        if(!objectPlaced) document.getElementById('ar-hint').innerText = "Toque para posicionar";
+                        reticle.matrix.fromArray(hits[0].getPose(renderer.xr.getReferenceSpace()).transform.matrix);
+                        if(!objectPlaced) document.getElementById('status-msg').innerText = "Toque para posicionar";
                     } else reticle.visible = false;
                 }
             }
 
             // Animações
             if(contentGroup.visible || !renderer.xr.isPresenting) {
-                // Girar peças animadas (Fans)
-                animatedParts.forEach(part => {
-                    // O eixo de rotação depende de como construímos.
-                    // Fans da GPU foram giradas no X para ficarem de pé, então giram no Z local?
-                    // Vamos testar rotação Z local
-                    part.rotateZ(-0.15); 
+                // Rotação
+                rotatingParts.forEach(part => {
+                    if(part.userData.axis === 'z') part.rotation.z -= 0.2;
+                    else part.rotation.y -= 0.2;
                 });
 
-                // Rotação suave Showcase no PC
-                if(!renderer.xr.isPresenting) contentGroup.rotation.y += 0.002;
+                // Pulso RGB
+                const hue = (timestamp * 0.0005) % 1;
+                pulsatingParts.forEach(mat => mat.emissive.setHSL(hue, 1, 0.5));
+
+                // Rotação Showcase (PC)
+                if(!renderer.xr.isPresenting) contentGroup.rotation.y += 0.005;
             }
 
             renderer.render(scene, camera);
         }
-
     </script>
 </body>
 </html>
