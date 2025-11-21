@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Visualizador AR - Hardware High Fidelity</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background-color: #050505; 
+            font-family: 'Courier New', Courier, monospace; 
+            user-select: none;
+        }
+        canvas { display: block; }
+        
+        /* UI Layer */
+        #ui-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+            /* Fundo gradiente apenas para o modo simulação */
+            background: radial-gradient(circle, transparent 60%, rgba(0,0,0,0.8) 100%);
+            transition: opacity 0.5s;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            color: #00ff88;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .status-box {
+            border-left: 3px solid #00ff88;
+            padding-left: 15px;
+            background: rgba(0, 20, 10, 0.6);
+            backdrop-filter: blur(4px);
+            border-radius: 0 8px 8px 0;
+        }
+
+        .component-tag {
+            font-family: 'Segoe UI', sans-serif;
+            font-weight: 800;
+            color: #fff;
+            font-size: 18px;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        .sub-tag { color: #aaa; font-size: 11px; font-weight: 600; }
+        
+        /* Aviso de AR */
+        #ar-warning {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            border: 1px solid red;
+            color: white; padding: 20px;
+            display: none; text-align: center;
+            z-index: 999;
+        }
+
+        .loading {
+            position: absolute; top: 50%; left: 50%; 
+            transform: translate(-50%, -50%);
+            color: #00ff88; font-size: 14px; 
+            background: rgba(0,0,0,0.8); padding: 20px;
+            border: 1px solid #00ff88; z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div class="header">
+            <div class="status-box">
+                <div class="component-tag">AMD RYZEN™ 9</div>
+                <div class="sub-tag">SOCKET AM5 / LGA 1718</div>
+            </div>
+            <div style="text-align: right; color: white; font-size: 10px; opacity: 0.7;">
+                AR CORE: READY<br>LIGHT: CALIBRATED
+            </div>
+        </div>
+        <div style="text-align: center; color: rgba(255,255,255,0.5); margin-bottom: 80px; font-size: 10px;">
+            TOQUE "START AR" PARA USAR A CÂMERA
+        </div>
+    </div>
+
+    <div id="ar-warning">
+        ⚠️ <strong>Atenção</strong><br><br>
+        Para usar a Câmera (AR), este arquivo precisa rodar em HTTPS ou Localhost.<br>
+        Apenas abrir o arquivo .html bloqueará a câmera.
+    </div>
+
+    <div class="loading" id="loader">CARREGANDO MOTOR GRÁFICO...</div>
+
+    <!-- Import Map: Resolve o erro de dependências do Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <!-- Importando via ES Modules usando o Import Map definido acima -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { ARButton } from 'three/addons/webxr/ARButton.js';
+        import { PMREMGenerator } from 'three';
+
+        // Verificação de segurança (HTTPS/Localhost)
+        if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            document.getElementById('ar-warning').style.display = 'block';
+        }
+
+        // --- 1. GERAÇÃO DE TEXTURAS ---
+        function createPCBTexture() {
+            const size = 512;
+            const canvas = document.createElement('canvas');
+            canvas.width = size; canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#1a2b20'; ctx.fillRect(0, 0, size, size);
+            
+            ctx.strokeStyle = '#1e3828'; ctx.lineWidth = 6;
+            for(let i=0; i<50; i++) {
+                ctx.beginPath();
+                ctx.moveTo(Math.random()*size, Math.random()*size);
+                ctx.lineTo(Math.random()*size, Math.random()*size);
+                ctx.stroke();
+            }
+            
+            ctx.fillStyle = '#886600';
+            for(let i=0; i<50; i++) {
+                ctx.beginPath();
+                ctx.arc(Math.random()*size, Math.random()*size, 2, 0, Math.PI*2);
+                ctx.fill();
+            }
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+            return tex;
+        }
+
+        // --- 2. SETUP CENA ---
+        const scene = new THREE.Scene();
+        // Não definimos scene.background aqui para permitir transparência no AR
+        
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 20);
+        camera.position.set(0, 3, 5);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); // Alpha true para câmera
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        
+        // CORREÇÃO DE LUZ EXPLODIDA
+        renderer.toneMapping = THREE.ReinhardToneMapping; // Melhor que ACES para evitar estouro
+        renderer.toneMappingExposure = 1.5; // Exposição controlada
+        renderer.xr.enabled = true; // Habilita WebXR
+        document.body.appendChild(renderer.domElement);
+
+        // Adiciona Botão de AR
+        document.body.appendChild(ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] }));
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.target.set(0, 0, 0);
+
+        // --- 3. ILUMINAÇÃO CONTROLADA ---
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+        scene.environment = pmremGenerator.fromScene(new THREE.Scene()).texture; // Ambiente neutro para reflexos
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+
+        const mainLight = new THREE.DirectionalLight(0xffffff, 2.0); // Reduzido de 8.0 para 2.0
+        mainLight.position.set(2, 5, 2);
+        mainLight.castShadow = true;
+        mainLight.shadow.mapSize.width = 1024;
+        mainLight.shadow.mapSize.height = 1024;
+        scene.add(mainLight);
+
+        // --- 4. CONTEÚDO 3D ---
+        // Criamos um grupo "container" para facilitar o posicionamento no AR
+        const contentGroup = new THREE.Group();
+        scene.add(contentGroup);
+
+        const pcbTex = createPCBTexture();
+
+        // MATERIAIS AJUSTADOS (Menos brilho especular extremo)
+        const matPCB = new THREE.MeshStandardMaterial({ map: pcbTex, roughness: 0.6, metalness: 0.1 });
+        const matMetal = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.3, metalness: 0.8 });
+        const matBlack = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.7 });
+        const matRGB = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xff0000, emissiveIntensity: 1.5 }); // Reduzido
+
+        // Placa
+        const board = new THREE.Mesh(new THREE.BoxGeometry(2, 0.05, 2), matPCB);
+        board.receiveShadow = true;
+        contentGroup.add(board);
+
+        // Cooler/CPU
+        const cpu = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.8), matMetal);
+        cpu.position.y = 0.1;
+        cpu.castShadow = true;
+        contentGroup.add(cpu);
+
+        const fanGroup = new THREE.Group();
+        fanGroup.position.y = 0.3;
+        
+        const heatsink = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.3, 32), matMetal);
+        heatsink.castShadow = true;
+        fanGroup.add(heatsink);
+
+        const rgbRing = new THREE.Mesh(new THREE.TorusGeometry(0.72, 0.02, 16, 32), matRGB);
+        rgbRing.rotation.x = Math.PI/2;
+        rgbRing.position.y = 0.15;
+        fanGroup.add(rgbRing);
+
+        const blades = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.02, 0.2), matBlack);
+        fanGroup.add(blades);
+
+        contentGroup.add(fanGroup);
+
+        // --- LOOP ---
+        document.getElementById('loader').style.display = 'none';
+
+        // Ajustes quando entra em AR
+        renderer.xr.addEventListener('sessionstart', () => {
+            document.getElementById('ui-layer').style.display = 'none';
+            // Reduz o objeto para caber na sala (escala real)
+            contentGroup.scale.set(0.1, 0.1, 0.1); 
+            contentGroup.position.set(0, 0, -0.5); // Posiciona na frente da câmera
+        });
+
+        renderer.xr.addEventListener('sessionend', () => {
+            document.getElementById('ui-layer').style.display = 'flex';
+            contentGroup.scale.set(1, 1, 1);
+            contentGroup.position.set(0, 0, 0);
+            camera.position.set(0, 3, 5);
+        });
+
+        function animate() {
+            renderer.setAnimationLoop((time) => {
+                const t = time / 1000;
+
+                // Animações
+                fanGroup.rotation.y -= 0.1;
+                blades.rotation.y -= 0.2;
+                
+                // Ciclo RGB
+                const hue = (t * 0.1) % 1;
+                matRGB.emissive.setHSL(hue, 1, 0.5);
+
+                // Efeito Exploded View suave
+                const float = (Math.sin(t) + 1) * 0.5;
+                fanGroup.position.y = 0.3 + (float * 0.2);
+
+                renderer.render(scene, camera);
+            });
+        }
+
+        animate();
+
+    </script>
+</body>
+</html>
