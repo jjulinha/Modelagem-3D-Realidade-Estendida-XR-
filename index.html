@@ -14,7 +14,7 @@
         }
         canvas { display: block; }
         
-        /* UI Layer */
+        /* UI Layer (HUD) */
         #ui-layer {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -24,7 +24,6 @@
             justify-content: space-between;
             padding: 20px;
             box-sizing: border-box;
-            /* Fundo gradiente apenas para o modo simulação */
             background: radial-gradient(circle, transparent 60%, rgba(0,0,0,0.8) 100%);
             transition: opacity 0.5s;
         }
@@ -56,15 +55,27 @@
 
         .sub-tag { color: #aaa; font-size: 11px; font-weight: 600; }
         
-        /* Aviso de AR */
+        /* Instruções AR */
+        #ar-instructions {
+            position: absolute;
+            bottom: 100px; width: 100%;
+            text-align: center;
+            color: white; font-weight: bold;
+            text-shadow: 0 1px 3px black;
+            display: none;
+            font-family: sans-serif;
+            pointer-events: none;
+        }
+
         #ar-warning {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.9);
             border: 1px solid red;
             color: white; padding: 20px;
             display: none; text-align: center;
             z-index: 999;
+            border-radius: 8px;
         }
 
         .loading {
@@ -82,26 +93,28 @@
         <div class="header">
             <div class="status-box">
                 <div class="component-tag">AMD RYZEN™ 9</div>
-                <div class="sub-tag">SOCKET AM5 / LGA 1718</div>
+                <div class="sub-tag">ESCALA REAL (1:1) / HIT-TEST</div>
             </div>
             <div style="text-align: right; color: white; font-size: 10px; opacity: 0.7;">
-                AR CORE: READY<br>LIGHT: CALIBRATED
+                AR CORE: ATIVO<br>SENSORS: LIGADOS
             </div>
         </div>
         <div style="text-align: center; color: rgba(255,255,255,0.5); margin-bottom: 80px; font-size: 10px;">
-            TOQUE "START AR" PARA USAR A CÂMERA
+            MODO DE APRESENTAÇÃO TÉCNICA
         </div>
     </div>
 
+    <div id="ar-instructions">APONTE PARA O CHÃO E TOQUE PARA POSICIONAR</div>
+
     <div id="ar-warning">
-        ⚠️ <strong>Atenção</strong><br><br>
-        Para usar a Câmera (AR), este arquivo precisa rodar em HTTPS ou Localhost.<br>
-        Apenas abrir o arquivo .html bloqueará a câmera.
+        ⚠️ <strong>Erro de Protocolo</strong><br><br>
+        A câmera requer conexão segura (HTTPS).<br>
+        Use o GitHub Pages ou localhost.
     </div>
 
-    <div class="loading" id="loader">CARREGANDO MOTOR GRÁFICO...</div>
+    <div class="loading" id="loader">INICIALIZANDO SISTEMA...</div>
 
-    <!-- Import Map: Resolve o erro de dependências do Three.js -->
+    <!-- Import Map -->
     <script type="importmap">
         {
             "imports": {
@@ -111,166 +124,321 @@
         }
     </script>
 
-    <!-- Importando via ES Modules usando o Import Map definido acima -->
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { ARButton } from 'three/addons/webxr/ARButton.js';
-        import { PMREMGenerator } from 'three';
 
-        // Verificação de segurança (HTTPS/Localhost)
+        // Verificação HTTPS
         if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
             document.getElementById('ar-warning').style.display = 'block';
+            document.getElementById('loader').style.display = 'none';
         }
 
-        // --- 1. GERAÇÃO DE TEXTURAS ---
+        // --- VARIÁVEIS GLOBAIS ---
+        let container;
+        let camera, scene, renderer;
+        let controller;
+        let reticle; // A "mira" que detecta o chão
+        let hitTestSource = null;
+        let hitTestSourceRequested = false;
+        let objectPlaced = false;
+        let contentGroup; // Onde nosso hardware vai morar
+
+        // --- 1. TEXTURAS PROCEDURAIS (PCB Realista) ---
         function createPCBTexture() {
-            const size = 512;
+            const size = 1024; // Alta resolução para ver de perto
             const canvas = document.createElement('canvas');
             canvas.width = size; canvas.height = size;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#1a2b20'; ctx.fillRect(0, 0, size, size);
             
-            ctx.strokeStyle = '#1e3828'; ctx.lineWidth = 6;
-            for(let i=0; i<50; i++) {
+            // Base Epóxi Verde Escura
+            ctx.fillStyle = '#0f2b1d'; 
+            ctx.fillRect(0, 0, size, size);
+            
+            // Trilhas de Cobre (Submersas)
+            ctx.strokeStyle = '#1a402b'; 
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'square';
+            for(let i=0; i<150; i++) {
                 ctx.beginPath();
-                ctx.moveTo(Math.random()*size, Math.random()*size);
-                ctx.lineTo(Math.random()*size, Math.random()*size);
+                const x = Math.random()*size;
+                const y = Math.random()*size;
+                ctx.moveTo(x, y);
+                if(Math.random() > 0.5) ctx.lineTo(x + (Math.random()*200 - 100), y);
+                else ctx.lineTo(x, y + (Math.random()*200 - 100));
                 ctx.stroke();
             }
             
-            ctx.fillStyle = '#886600';
-            for(let i=0; i<50; i++) {
+            // Pads de Solda Dourados
+            ctx.fillStyle = '#cda865';
+            for(let i=0; i<80; i++) {
                 ctx.beginPath();
-                ctx.arc(Math.random()*size, Math.random()*size, 2, 0, Math.PI*2);
+                ctx.arc(Math.random()*size, Math.random()*size, 3, 0, Math.PI*2);
                 ctx.fill();
             }
+
             const tex = new THREE.CanvasTexture(canvas);
             tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+            tex.anisotropy = 16;
             return tex;
         }
 
-        // --- 2. SETUP CENA ---
-        const scene = new THREE.Scene();
-        // Não definimos scene.background aqui para permitir transparência no AR
-        
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 20);
-        camera.position.set(0, 3, 5);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); // Alpha true para câmera
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        
-        // CORREÇÃO DE LUZ EXPLODIDA
-        renderer.toneMapping = THREE.ReinhardToneMapping; // Melhor que ACES para evitar estouro
-        renderer.toneMappingExposure = 1.5; // Exposição controlada
-        renderer.xr.enabled = true; // Habilita WebXR
-        document.body.appendChild(renderer.domElement);
-
-        // Adiciona Botão de AR
-        document.body.appendChild(ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] }));
-
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.target.set(0, 0, 0);
-
-        // --- 3. ILUMINAÇÃO CONTROLADA ---
-        const pmremGenerator = new THREE.PMREMGenerator(renderer);
-        scene.environment = pmremGenerator.fromScene(new THREE.Scene()).texture; // Ambiente neutro para reflexos
-
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-        scene.add(ambientLight);
-
-        const mainLight = new THREE.DirectionalLight(0xffffff, 2.0); // Reduzido de 8.0 para 2.0
-        mainLight.position.set(2, 5, 2);
-        mainLight.castShadow = true;
-        mainLight.shadow.mapSize.width = 1024;
-        mainLight.shadow.mapSize.height = 1024;
-        scene.add(mainLight);
-
-        // --- 4. CONTEÚDO 3D ---
-        // Criamos um grupo "container" para facilitar o posicionamento no AR
-        const contentGroup = new THREE.Group();
-        scene.add(contentGroup);
-
-        const pcbTex = createPCBTexture();
-
-        // MATERIAIS AJUSTADOS (Menos brilho especular extremo)
-        const matPCB = new THREE.MeshStandardMaterial({ map: pcbTex, roughness: 0.6, metalness: 0.1 });
-        const matMetal = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.3, metalness: 0.8 });
-        const matBlack = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.7 });
-        const matRGB = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xff0000, emissiveIntensity: 1.5 }); // Reduzido
-
-        // Placa
-        const board = new THREE.Mesh(new THREE.BoxGeometry(2, 0.05, 2), matPCB);
-        board.receiveShadow = true;
-        contentGroup.add(board);
-
-        // Cooler/CPU
-        const cpu = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.8), matMetal);
-        cpu.position.y = 0.1;
-        cpu.castShadow = true;
-        contentGroup.add(cpu);
-
-        const fanGroup = new THREE.Group();
-        fanGroup.position.y = 0.3;
-        
-        const heatsink = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.3, 32), matMetal);
-        heatsink.castShadow = true;
-        fanGroup.add(heatsink);
-
-        const rgbRing = new THREE.Mesh(new THREE.TorusGeometry(0.72, 0.02, 16, 32), matRGB);
-        rgbRing.rotation.x = Math.PI/2;
-        rgbRing.position.y = 0.15;
-        fanGroup.add(rgbRing);
-
-        const blades = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.02, 0.2), matBlack);
-        fanGroup.add(blades);
-
-        contentGroup.add(fanGroup);
-
-        // --- LOOP ---
-        document.getElementById('loader').style.display = 'none';
-
-        // Ajustes quando entra em AR
-        renderer.xr.addEventListener('sessionstart', () => {
-            document.getElementById('ui-layer').style.display = 'none';
-            // Reduz o objeto para caber na sala (escala real)
-            contentGroup.scale.set(0.1, 0.1, 0.1); 
-            contentGroup.position.set(0, 0, -0.5); // Posiciona na frente da câmera
-        });
-
-        renderer.xr.addEventListener('sessionend', () => {
-            document.getElementById('ui-layer').style.display = 'flex';
-            contentGroup.scale.set(1, 1, 1);
-            contentGroup.position.set(0, 0, 0);
-            camera.position.set(0, 3, 5);
-        });
-
-        function animate() {
-            renderer.setAnimationLoop((time) => {
-                const t = time / 1000;
-
-                // Animações
-                fanGroup.rotation.y -= 0.1;
-                blades.rotation.y -= 0.2;
-                
-                // Ciclo RGB
-                const hue = (t * 0.1) % 1;
-                matRGB.emissive.setHSL(hue, 1, 0.5);
-
-                // Efeito Exploded View suave
-                const float = (Math.sin(t) + 1) * 0.5;
-                fanGroup.position.y = 0.3 + (float * 0.2);
-
-                renderer.render(scene, camera);
-            });
-        }
-
+        init();
         animate();
 
+        function init() {
+            container = document.createElement('div');
+            document.body.appendChild(container);
+
+            scene = new THREE.Scene();
+
+            // Câmera configurada para escala humana
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+            
+            // --- ILUMINAÇÃO FOTOREALISTA ---
+            // Luz Hemisférica para base suave (Céu azulado, chão terroso)
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 0.5);
+            hemiLight.position.set(0, 1, 0);
+            scene.add(hemiLight);
+
+            // Luz Direcional com Sombras Suaves (Simulando Sol/Lâmpada forte)
+            const dirLight = new THREE.DirectionalLight(0xffffff, 2.5);
+            dirLight.position.set(0.5, 2, 0.5); // Vem de cima
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            scene.add(dirLight);
+
+            // --- RENDERER ---
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.xr.enabled = true; // Essencial para WebXR
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping; // Melhor contraste
+            renderer.toneMappingExposure = 1.2;
+            container.appendChild(renderer.domElement);
+
+            // Botão AR com "Hit Test" (Detectar superfície)
+            let arButton = ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] });
+            document.body.appendChild(arButton);
+
+            // --- CONTEÚDO 3D (ESCALA REAL: 1 unidade = 1 metro) ---
+            contentGroup = new THREE.Group();
+            contentGroup.visible = false; // Invisível até o usuário tocar na tela
+            scene.add(contentGroup);
+
+            // Materiais PBR Avançados
+            const pcbTex = createPCBTexture();
+            const matPCB = new THREE.MeshStandardMaterial({ 
+                map: pcbTex, 
+                roughness: 0.4, // Meio brilhante (verniz)
+                metalness: 0.1 
+            });
+            const matIHS = new THREE.MeshStandardMaterial({ 
+                color: 0xdddddd, 
+                roughness: 0.25, // Alumínio fosco
+                metalness: 0.9 
+            }); 
+            const matGold = new THREE.MeshStandardMaterial({ 
+                color: 0xffd700, 
+                roughness: 0.15, 
+                metalness: 1.0 
+            });
+            const matFan = new THREE.MeshStandardMaterial({ 
+                color: 0x111111, 
+                roughness: 0.6 
+            });
+            const matRGB = new THREE.MeshStandardMaterial({ 
+                color: 0x000000, 
+                emissive: 0xff0033, 
+                emissiveIntensity: 2.0 
+            });
+
+            // 1. Placa Mãe (Base de corte: 20cm x 20cm)
+            // Geometria: 0.2m = 20cm
+            const board = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.002, 0.2), matPCB);
+            board.position.y = 0.001; // Levemente acima do chão
+            board.receiveShadow = true;
+            board.castShadow = true;
+            contentGroup.add(board);
+
+            // 2. Processador Ryzen (Tamanho Real: 40mm x 40mm)
+            // 0.04m = 4cm
+            const cpuGroup = new THREE.Group();
+            
+            // PCB do CPU
+            const cpuBase = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.002, 0.04), matPCB);
+            cpuGroup.add(cpuBase);
+            
+            // IHS (Metal) - Formato característico
+            const ihs = new THREE.Mesh(new THREE.BoxGeometry(0.034, 0.004, 0.034), matIHS);
+            ihs.position.y = 0.003;
+            ihs.castShadow = true;
+            cpuGroup.add(ihs);
+
+            // Pinos/Contatos (Visual)
+            cpuGroup.position.y = 0.015; // Posição inicial flutuando na animação
+            contentGroup.add(cpuGroup);
+
+            // 3. Cooler (Tamanho Real: ~12cm diâmetro)
+            const coolerGroup = new THREE.Group();
+            
+            // Dissipador
+            const heatsink = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.03, 64), matIHS);
+            heatsink.position.y = 0.015;
+            heatsink.castShadow = true;
+            coolerGroup.add(heatsink);
+
+            // Anel RGB
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(0.062, 0.002, 16, 64), matRGB);
+            ring.rotation.x = Math.PI / 2;
+            ring.position.y = 0.03;
+            coolerGroup.add(ring);
+
+            // Ventoinha
+            const fanGeo = new THREE.BoxGeometry(0.11, 0.002, 0.02);
+            const fanBlades = new THREE.Group();
+            for(let i=0; i<7; i++) {
+                const blade = new THREE.Mesh(fanGeo, matFan);
+                blade.rotation.y = (i/7) * Math.PI * 2;
+                fanBlades.add(blade);
+            }
+            fanBlades.position.y = 0.032;
+            
+            // Referência global para animação
+            window.fanBlades = fanBlades;
+            window.cpuGroup = cpuGroup;
+            window.coolerGroup = coolerGroup;
+            window.matRGB = matRGB;
+            
+            coolerGroup.add(fanBlades);
+            coolerGroup.position.y = 0.05; // Acima do CPU
+            contentGroup.add(coolerGroup);
+
+            // --- RETÍCULO (MIRA DE AR) ---
+            // Esse é o anel branco que mostra onde o objeto vai aparecer
+            reticle = new THREE.Mesh(
+                new THREE.RingGeometry(0.15, 0.2, 32).rotateX(-Math.PI / 2),
+                new THREE.MeshBasicMaterial()
+            );
+            reticle.matrixAutoUpdate = false;
+            reticle.visible = false; // Só aparece quando o AR detectar chão
+            scene.add(reticle);
+
+            // --- INTERAÇÃO (Toque na tela) ---
+            controller = renderer.xr.getController(0);
+            controller.addEventListener('select', onSelect);
+            scene.add(controller);
+
+            // OrbitControls para teste no PC (sem AR)
+            const controls = new OrbitControls(camera, renderer.domElement);
+            controls.target.set(0, 0, 0);
+            controls.update();
+
+            window.addEventListener('resize', onWindowResize);
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        // Função chamada ao tocar na tela
+        function onSelect() {
+            if (reticle.visible) {
+                // Posiciona o grupo no local do retículo
+                contentGroup.position.setFromMatrixPosition(reticle.matrix);
+                contentGroup.visible = true; // Mostra o objeto
+                objectPlaced = true;
+                
+                // Esconde instruções
+                document.getElementById('ar-instructions').style.display = 'none';
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // --- LOOP DE RENDERIZAÇÃO ---
+        function animate() {
+            renderer.setAnimationLoop(render);
+        }
+
+        function render(timestamp, frame) {
+            const delta = timestamp / 1000;
+
+            // Lógica do WebXR Hit Test (O coração do AR)
+            if (frame) {
+                const referenceSpace = renderer.xr.getReferenceSpace();
+                const session = renderer.xr.getSession();
+
+                if (hitTestSourceRequested === false) {
+                    session.requestReferenceSpace('viewer').then(function (referenceSpace) {
+                        session.requestHitTestSource({ space: referenceSpace }).then(function (source) {
+                            hitTestSource = source;
+                        });
+                    });
+
+                    session.addEventListener('end', function () {
+                        hitTestSourceRequested = false;
+                        hitTestSource = null;
+                        document.getElementById('ar-instructions').style.display = 'none';
+                        document.getElementById('ui-layer').style.display = 'flex';
+                    });
+
+                    hitTestSourceRequested = true;
+                    
+                    // Mostrar instruções ao iniciar AR
+                    document.getElementById('ui-layer').style.display = 'none';
+                    document.getElementById('ar-instructions').style.display = 'block';
+                }
+
+                if (hitTestSource) {
+                    const hitTestResults = frame.getHitTestResults(hitTestSource);
+
+                    if (hitTestResults.length > 0) {
+                        const hit = hitTestResults[0];
+                        // Coloca o retículo na posição da superfície detectada
+                        reticle.visible = true;
+                        reticle.matrix.fromArray(hit.getPose(referenceSpace).transform.matrix);
+                    } else {
+                        reticle.visible = false;
+                    }
+                }
+            }
+
+            // Animações do Hardware (Se estiver visível ou no modo PC)
+            if (contentGroup.visible || !renderer.xr.isPresenting) {
+                // 1. Ventoinha Girando
+                if(window.fanBlades) window.fanBlades.rotation.y -= 0.2;
+
+                // 2. LED RGB Pulsando
+                if(window.matRGB) {
+                    const hue = (delta * 0.2) % 1;
+                    window.matRGB.emissive.setHSL(hue, 1, 0.5);
+                }
+
+                // 3. Vista Explodida (Sobe e desce suavemente)
+                // Usamos escala real (metros), então os movimentos são pequenos (centímetros)
+                const float = (Math.sin(delta * 1.5) + 1) * 0.5; // 0 a 1
+                
+                // CPU flutua 2cm acima da placa
+                if(window.cpuGroup) {
+                    window.cpuGroup.position.y = 0.005 + (float * 0.02);
+                    window.cpuGroup.rotation.y = float * 0.2;
+                }
+
+                // Cooler flutua 4cm acima da CPU
+                if(window.coolerGroup) {
+                    window.coolerGroup.position.y = window.cpuGroup.position.y + 0.02 + (float * 0.04);
+                    window.coolerGroup.rotation.y = delta * 0.5;
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
     </script>
 </body>
 </html>
