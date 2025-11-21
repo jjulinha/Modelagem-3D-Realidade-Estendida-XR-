@@ -3,501 +3,220 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Hardware AR - Ultimate</title>
+    <title>Hardware AR - Ultimate (Melhorado)</title>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #00ff88;
-            --glass: rgba(10, 15, 20, 0.80);
-            --border: rgba(255, 255, 255, 0.1);
-        }
-
-        body { 
-            margin: 0; overflow: hidden; background-color: #050505; 
-            font-family: 'Rajdhani', sans-serif;
-            user-select: none; -webkit-tap-highlight-color: transparent;
-        }
-
-        /* --- UI RESTAURADA (Cyberpunk Dock) --- */
-        
-        /* Topo: Informações */
-        #info-panel {
-            position: absolute; top: 0; left: 0; width: 100%;
-            padding: 20px; box-sizing: border-box;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
-            pointer-events: none; z-index: 10;
-        }
-
-        h1 {
-            margin: 0; color: white; font-size: 24px; text-transform: uppercase;
-            text-shadow: 0 0 10px rgba(0,255,136,0.3);
-            display: flex; align-items: center; gap: 10px;
-        }
-
-        .badge {
-            background: var(--primary); color: black; padding: 2px 6px;
-            border-radius: 4px; font-size: 10px; font-weight: 800;
-        }
-
-        #subtitle { color: #888; font-size: 14px; margin-top: 5px; font-weight: 600; }
-
-        /* Baixo: Doca de Seleção */
-        #selection-dock {
-            position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 15px;
-            padding: 10px 20px;
-            background: var(--glass);
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border-radius: 24px; border: 1px solid var(--border);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            z-index: 20;
-        }
-
-        .model-btn {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid transparent; color: white;
-            width: 55px; height: 55px; border-radius: 16px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            cursor: pointer; transition: all 0.2s ease;
-        }
-
-        .model-btn.active {
-            background: rgba(0, 255, 136, 0.15);
-            border-color: var(--primary); color: var(--primary);
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.2);
-        }
-
-        .btn-icon { font-size: 20px; margin-bottom: 2px; }
-        .btn-label { font-size: 9px; font-weight: 700; letter-spacing: 1px; }
-
-        /* --- GUIAS --- */
-        #ar-guide {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.8); border: 1px solid var(--primary);
-            color: white; padding: 15px 25px; border-radius: 50px;
-            font-size: 14px; font-weight: 600; display: none; pointer-events: none;
-        }
-
-        #loader {
-            position: absolute; inset: 0; background: #000; z-index: 100;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: var(--primary); font-size: 12px; letter-spacing: 2px;
-        }
-        .spinner {
-            width: 30px; height: 30px; border: 3px solid #222; border-top: 3px solid var(--primary);
-            border-radius: 50%; animation: spin 1s infinite linear; margin-bottom: 15px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Botão AR (Customizado) */
-        button#ARButton {
-            background-color: white !important; color: black !important;
-            border-radius: 30px !important; bottom: 30px !important;
-            width: 160px !important; font-family: 'Rajdhani' !important;
-            font-weight: 800 !important; text-transform: uppercase !important;
-        }
+        :root{ --primary:#00ff88; --glass:rgba(10,15,20,0.80); --border:rgba(255,255,255,0.08); }
+        body{ margin:0; overflow:hidden; background:#050505; font-family:'Rajdhani',sans-serif; user-select:none; }
+        #info-panel{ position:absolute; top:0; left:0; width:100%; padding:18px; box-sizing:border-box; background:linear-gradient(to bottom, rgba(0,0,0,0.92), transparent); z-index:10; pointer-events:none }
+        h1{ margin:0; color:#fff; font-size:22px; display:flex; gap:10px; align-items:center; text-transform:uppercase }
+        .badge{ background:var(--primary); color:#000; padding:2px 6px; border-radius:5px; font-weight:800; font-size:11px }
+        #subtitle{ color:#888; font-size:13px; margin-top:6px; font-weight:600 }
+        #selection-dock{ position:absolute; bottom:96px; left:50%; transform:translateX(-50%); display:flex; gap:14px; padding:10px 18px; background:var(--glass); backdrop-filter:blur(12px); border-radius:22px; border:1px solid var(--border); z-index:20 }
+        .model-btn{ width:58px; height:58px; border-radius:14px; background:rgba(255,255,255,0.04); display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; cursor:pointer }
+        .model-btn.active{ background:rgba(0,255,136,0.12); transform:translateY(-6px); box-shadow:0 6px 18px rgba(0,255,136,0.12) }
+        #ar-guide{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.8); border:1px solid var(--primary); color:#fff; padding:12px 20px; border-radius:40px; font-weight:700; display:none; pointer-events:none }
+        #loader{ position:absolute; inset:0; background:#000; z-index:100; display:flex; flex-direction:column; justify-content:center; align-items:center; color:var(--primary); }
+        .spinner{ width:36px; height:36px; border:3px solid #111; border-top:3px solid var(--primary); border-radius:50%; animation:spin 1s linear infinite }
+        @keyframes spin{ to{ transform:rotate(360deg) } }
+        button#ARButton{ background:#fff !important; color:#000 !important; border-radius:30px !important; bottom:30px !important; width:160px !important; font-weight:800 !important }
     </style>
 </head>
 <body>
-
-    <!-- Topo -->
     <div id="info-panel">
-        <h1>
-            <span id="model-title">ASUS ROG MAXIMUS</span>
-            <span class="badge">AR V3.0</span>
-        </h1>
+        <h1><span id="model-title">ASUS ROG MAXIMUS</span><span class="badge">AR V3.0</span></h1>
         <div id="subtitle">SISTEMA DE ALTA FIDELIDADE • ESCALA 1:1</div>
     </div>
 
-    <!-- Doca Flutuante -->
     <div id="selection-dock">
-        <div class="model-btn active" onclick="window.selectModel('mobo')">
-            <div class="btn-icon">🎛️</div><div class="btn-label">MOBO</div>
-        </div>
-        <div class="model-btn" onclick="window.selectModel('cpu')">
-            <div class="btn-icon">❄️</div><div class="btn-label">COOLER</div>
-        </div>
-        <div class="model-btn" onclick="window.selectModel('gpu')">
-            <div class="btn-icon">📼</div><div class="btn-label">GPU</div>
-        </div>
-        <div class="model-btn" onclick="window.selectModel('ram')">
-            <div class="btn-icon">💾</div><div class="btn-label">RAM</div>
-        </div>
+        <div class="model-btn active" onclick="window.selectModel('mobo', this)"><div>🎛️</div><div style="font-size:10px;margin-top:4px">MOBO</div></div>
+        <div class="model-btn" onclick="window.selectModel('cpu', this)"><div>❄️</div><div style="font-size:10px;margin-top:4px">COOLER</div></div>
+        <div class="model-btn" onclick="window.selectModel('gpu', this)"><div>📼</div><div style="font-size:10px;margin-top:4px">GPU</div></div>
+        <div class="model-btn" onclick="window.selectModel('ram', this)"><div>💾</div><div style="font-size:10px;margin-top:4px">RAM</div></div>
     </div>
 
     <div id="ar-guide">MOVA O CELULAR PARA ESCANEAR...</div>
-    
-    <div id="loader">
-        <div class="spinner"></div>
-        <div>CARREGANDO ASSETS...</div>
-    </div>
+    <div id="loader"><div class="spinner"></div><div style="margin-top:12px">CARREGANDO ASSETS...</div></div>
 
-    <!-- Import Map -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
+    <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }</script>
 
     <script type="module">
-        import * as THREE from 'three';
-        import { ARButton } from 'three/addons/webxr/ARButton.js';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+    import * as THREE from 'three';
+    import { ARButton } from 'three/addons/webxr/ARButton.js';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
-        // Variáveis
-        let camera, scene, renderer;
-        let contentGroup, reticle;
-        let hitTestSource = null, hitTestSourceRequested = false;
-        let objectPlaced = false;
-        
-        // Animação
-        let fans = [];
-        let floatParts = [];
-        let rgbTextureH, rgbTextureV; // Horizontal e Vertical
-        const mats = {};
+    // ---------- Setup ----------
+    let camera, scene, renderer, contentGroup, reticle;
+    let hitTestSource = null, hitTestSourceRequested = false, objectPlaced = false;
+    let fans = [], floatParts = [], mats = {}, rgbTextureH, rgbTextureV, microBump;
 
-        try { init(); animate(); } catch(e) { alert(e); }
+    init(); animate();
 
-        function init() {
-            const container = document.createElement('div');
-            document.body.appendChild(container);
+    function init(){
+        const container = document.createElement('div'); document.body.appendChild(container);
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.01, 50);
 
-            scene = new THREE.Scene();
+        // Estúdio: luz ambiente e key lights
+        const hemi = new THREE.HemisphereLight(0xffffff, 0x222222, 0.6); scene.add(hemi);
+        const key = new THREE.DirectionalLight(0xffffff, 3.0); key.position.set(2,4,2); scene.add(key);
+        const fill = new THREE.DirectionalLight(0xbfdfff, 0.8); fill.position.set(-2,1,-1); scene.add(fill);
+        const rim = new THREE.SpotLight(0x00ff88, 4.0); rim.position.set(-3,2,-2); scene.add(rim);
 
-            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+        renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true }); renderer.setPixelRatio(Math.min(window.devicePixelRatio,2)); renderer.setSize(window.innerWidth, window.innerHeight); renderer.xr.enabled = true; renderer.shadowMap.enabled = true; renderer.toneMapping = THREE.ACESFilmicToneMapping; container.appendChild(renderer.domElement);
 
-            // Iluminação de Estúdio
-            const hemi = new THREE.HemisphereLight(0xffffff, 0x222222, 1.0);
-            scene.add(hemi);
-            const dir = new THREE.DirectionalLight(0xffffff, 3.0);
-            dir.position.set(1, 4, 2);
-            dir.castShadow = true;
-            scene.add(dir);
-            const rim = new THREE.SpotLight(0x00ff88, 5.0);
-            rim.position.set(-2, 1, -2);
-            rim.lookAt(0,0,0);
-            scene.add(rim);
+        document.body.appendChild(ARButton.createButton(renderer, { requiredFeatures:['hit-test','dom-overlay'], domOverlay:{ root: document.body } }));
 
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.xr.enabled = true;
-            renderer.shadowMap.enabled = true;
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            container.appendChild(renderer.domElement);
+        createMaterials();
 
-            document.body.appendChild(ARButton.createButton(renderer, { 
-                requiredFeatures: ['hit-test', 'dom-overlay'], 
-                domOverlay: { root: document.body } 
-            }));
+        contentGroup = new THREE.Group(); scene.add(contentGroup);
+        loadObject('mobo');
 
-            createMaterials();
+        // Reticle
+        reticle = new THREE.Mesh(new THREE.RingGeometry(0.12,0.14,64).rotateX(-Math.PI/2), new THREE.MeshStandardMaterial({ color:0x00ff88 }));
+        reticle.matrixAutoUpdate = false; reticle.visible = false; scene.add(reticle);
 
-            contentGroup = new THREE.Group();
-            scene.add(contentGroup);
+        const controller = renderer.xr.getController(0); controller.addEventListener('select', onSelect); scene.add(controller);
 
-            // Carregar Inicial
-            loadObject('mobo');
+        const controls = new OrbitControls(camera, renderer.domElement); controls.target.set(0,0.06,0); controls.update();
 
-            // Retículo
-            reticle = new THREE.Mesh(
-                new THREE.RingGeometry(0.1, 0.11, 32).rotateX(-Math.PI / 2),
-                new THREE.MeshBasicMaterial({ color: 0x00ff88 })
-            );
-            reticle.matrixAutoUpdate = false;
-            reticle.visible = false;
-            scene.add(reticle);
+        renderer.xr.addEventListener('sessionstart', ()=>{ document.getElementById('ar-guide').style.display='block'; document.getElementById('info-panel').style.opacity='0'; contentGroup.visible=false; });
+        renderer.xr.addEventListener('sessionend', ()=>{ document.getElementById('ar-guide').style.display='none'; document.getElementById('info-panel').style.opacity='1'; contentGroup.visible=true; contentGroup.position.set(0,0,0); camera.position.set(0,0.3,0.3); camera.lookAt(0,0,0); objectPlaced=false; });
 
-            const controller = renderer.xr.getController(0);
-            controller.addEventListener('select', onSelect);
-            scene.add(controller);
+        window.addEventListener('resize', onWindowResize);
+        document.getElementById('loader').style.display='none';
+    }
 
-            const controls = new OrbitControls(camera, renderer.domElement);
-            controls.target.set(0, 0.05, 0);
-            controls.update();
+    function createMaterials(){
+        // PCB procedural (maior densidade de trilhas)
+        const cvs = document.createElement('canvas'); cvs.width=1024; cvs.height=1024; const ctx=cvs.getContext('2d'); ctx.fillStyle='#061214'; ctx.fillRect(0,0,1024,1024);
+        ctx.strokeStyle='#0b3a2d'; ctx.lineWidth=1.2; for(let i=0;i<250;i++){ ctx.beginPath(); ctx.moveTo(Math.random()*1024, Math.random()*1024); ctx.lineTo(Math.random()*1024, Math.random()*1024); ctx.stroke(); }
+        const pcbTex = new THREE.CanvasTexture(cvs); pcbTex.wrapS = pcbTex.wrapT = THREE.RepeatWrapping; pcbTex.repeat.set(1,1);
 
-            // Eventos AR
-            renderer.xr.addEventListener('sessionstart', () => {
-                document.getElementById('ar-guide').style.display = 'block';
-                document.getElementById('info-panel').style.opacity = '0';
-                contentGroup.visible = false;
-            });
-            renderer.xr.addEventListener('sessionend', () => {
-                document.getElementById('ar-guide').style.display = 'none';
-                document.getElementById('info-panel').style.opacity = '1';
-                contentGroup.visible = true;
-                contentGroup.position.set(0,0,0);
-                camera.position.set(0, 0.3, 0.3);
-                camera.lookAt(0,0,0);
-            });
+        // RGB gradients
+        const cvsH=document.createElement('canvas'); cvsH.width=1024; cvsH.height=2; const cH=cvsH.getContext('2d'); const gH=cH.createLinearGradient(0,0,1024,0); gH.addColorStop(0,'#ff0040'); gH.addColorStop(0.2,'#ffea00'); gH.addColorStop(0.4,'#00ff66'); gH.addColorStop(0.6,'#00e7ff'); gH.addColorStop(0.8,'#1b4dff'); gH.addColorStop(1,'#ff2dd9'); cH.fillStyle=gH; cH.fillRect(0,0,1024,2); rgbTextureH=new THREE.CanvasTexture(cvsH); rgbTextureH.wrapS=THREE.RepeatWrapping; rgbTextureH.repeat.set(1,1);
+        const cvsV=document.createElement('canvas'); cvsV.width=2; cvsV.height=1024; const cV=cvsV.getContext('2d'); const gV=cV.createLinearGradient(0,0,0,1024); gV.addColorStop(0,'#ff0040'); gV.addColorStop(0.2,'#ffea00'); gV.addColorStop(0.4,'#00ff66'); gV.addColorStop(0.6,'#00e7ff'); gV.addColorStop(0.8,'#1b4dff'); gV.addColorStop(1,'#ff2dd9'); cV.fillStyle=gV; cV.fillRect(0,0,2,1024); rgbTextureV=new THREE.CanvasTexture(cvsV); rgbTextureV.wrapT=THREE.RepeatWrapping; rgbTextureV.repeat.set(1,1);
 
-            window.addEventListener('resize', onWindowResize);
-            document.getElementById('loader').style.display = 'none';
+        // Micro-bump (grayscale noise) para dar relevo sutil
+        const bumpC=document.createElement('canvas'); bumpC.width=256; bumpC.height=256; const bctx=bumpC.getContext('2d'); for(let x=0;x<256;x++){ for(let y=0;y<256;y++){ const v = Math.floor(128 + (Math.random()*32 -16)); bctx.fillStyle = `rgb(${v},${v},${v})`; bctx.fillRect(x,y,1,1); }} microBump = new THREE.CanvasTexture(bumpC); microBump.wrapS=microBump.wrapT=THREE.RepeatWrapping; microBump.repeat.set(4,4);
+
+        mats.pcb = new THREE.MeshStandardMaterial({ map:pcbTex, roughness:0.55, metalness:0.06, bumpMap:microBump, bumpScale:0.002 });
+        mats.metal = new THREE.MeshStandardMaterial({ color:0x1b1b1b, roughness:0.26, metalness:0.95, envMapIntensity:1.0 });
+        mats.alum = new THREE.MeshStandardMaterial({ color:0xcfcfcf, roughness:0.38, metalness:0.85, bumpMap:microBump, bumpScale:0.0015 });
+        mats.gold = new THREE.MeshStandardMaterial({ color:0xffcc33, roughness:0.18, metalness:1.0 });
+        mats.copper = new THREE.MeshStandardMaterial({ color:0xc06b30, roughness:0.35, metalness:0.8 });
+        mats.rgbH = new THREE.MeshBasicMaterial({ map:rgbTextureH }); mats.rgbV = new THREE.MeshBasicMaterial({ map:rgbTextureV });
+    }
+
+    // --- Model selection ---
+    window.selectModel = function(type, btn){ document.querySelectorAll('.model-btn').forEach(b=>b.classList.remove('active')); if(btn) btn.classList.add('active'); const titles={ 'mobo':['ASUS ROG MAXIMUS','E-ATX • Z790 CHIPSET'], 'cpu':['RYZEN 9 + COOLER','IHS REALISTO • 37mm'], 'gpu':['RTX 4090 SUPRIM','304mm • 2.5 SLOT'], 'ram':['TRIDENT Z5 RGB','DDR5 6400MHZ • 133mm'] }; document.getElementById('model-title').innerText=titles[type][0]; document.getElementById('subtitle').innerText=titles[type][1]; loadObject(type); }
+
+    function loadObject(type){ contentGroup.clear(); fans=[]; floatParts=[]; if(type==='mobo') buildMobo(); if(type==='cpu') buildCPU_Cooler(); if(type==='gpu') buildGPU(); if(type==='ram') buildRAM(); }
+
+    // ---------- Builders ----------
+    function buildMobo(){
+        const g = new THREE.Group();
+        // MOBO realistic E-ATX 305 x 272 mm (em metros)
+        const w = 0.305, h = 0.0025, d = 0.272;
+        const pcb = new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 6, 0.006, 16), mats.pcb);
+        pcb.receiveShadow=true; g.add(pcb);
+
+        // Heatsinks - VRM com extrusão de aletas
+        for(let i=0;i<3;i++){
+            const base = new THREE.Mesh(new THREE.BoxGeometry(0.04,0.02,0.08,4,1,4), mats.metal); base.position.set(-0.08 + i*0.06, 0.011, -0.05 + i*0.01); g.add(base);
+            // Aletas finas
+            const fins = new THREE.Group();
+            const finCount=24;
+            for(let f=0; f<finCount; f++){ const fin = new THREE.Mesh(new THREE.BoxGeometry(0.04,0.001,0.08/finCount,1,1,1), mats.alum); fin.position.set(0,0.011 + (f*0.0009), -0.04 + f*(0.08/finCount)); fins.add(fin); }
+            fins.position.set(-0.08 + i*0.06, 0, -0.05 + i*0.01); g.add(fins);
         }
 
-        function createMaterials() {
-            // 1. Textura PCB Procedural
-            const cvs = document.createElement('canvas'); cvs.width=256; cvs.height=256;
-            const ctx = cvs.getContext('2d');
-            ctx.fillStyle='#050505'; ctx.fillRect(0,0,256,256);
-            ctx.strokeStyle='#222'; ctx.lineWidth=2;
-            for(let i=0;i<60;i++){ ctx.beginPath(); ctx.moveTo(Math.random()*256,Math.random()*256); ctx.lineTo(Math.random()*256,Math.random()*256); ctx.stroke(); }
-            const pcbTex = new THREE.CanvasTexture(cvs);
+        // I/O shield estilizado (RGB vertical)
+        const io = new THREE.Mesh(new THREE.BoxGeometry(0.06,0.035,0.002,1,1,1), mats.metal); io.position.set(-w/2 + 0.035, 0.013, -d/2 + 0.02); g.add(io);
+        const ioRGB = new THREE.Mesh(new THREE.PlaneGeometry(0.032,0.12,1,1), mats.rgbV); ioRGB.rotation.x = -Math.PI/2; ioRGB.position.set(-w/2 + 0.035, 0.032, -d/2 + 0.02); g.add(ioRGB);
 
-            // 2. RGB Rainbow (Horizontal)
-            const cvsH = document.createElement('canvas'); cvsH.width=256; cvsH.height=1;
-            const ctxH = cvsH.getContext('2d');
-            const grdH = ctxH.createLinearGradient(0,0,256,0);
-            grdH.addColorStop(0, '#ff0000'); grdH.addColorStop(0.2, '#ffff00'); grdH.addColorStop(0.4, '#00ff00');
-            grdH.addColorStop(0.6, '#00ffff'); grdH.addColorStop(0.8, '#0000ff'); grdH.addColorStop(1, '#ff00ff');
-            ctxH.fillStyle = grdH; ctxH.fillRect(0,0,256,1);
-            rgbTextureH = new THREE.CanvasTexture(cvsH);
-            rgbTextureH.wrapS = THREE.RepeatWrapping;
+        // PCIe slots (mais realistas e proporcionais)
+        for(let i=0;i<3;i++){ const slot = new THREE.Mesh(new THREE.BoxGeometry(0.17,0.009,0.012,4,1,2), mats.alum); slot.position.set(0.02, 0.006, -0.05 + i*0.08); g.add(slot); }
 
-            // 3. RGB Rainbow (Vertical - Rotacionado)
-            // Criamos uma textura onde o gradiente é vertical para mapear corretamente em peças "em pé"
-            const cvsV = document.createElement('canvas'); cvsV.width=1; cvsV.height=256;
-            const ctxV = cvsV.getContext('2d');
-            const grdV = ctxV.createLinearGradient(0,0,0,256);
-            grdV.addColorStop(0, '#ff0000'); grdV.addColorStop(0.2, '#ffff00'); grdV.addColorStop(0.4, '#00ff00');
-            grdV.addColorStop(0.6, '#00ffff'); grdV.addColorStop(0.8, '#0000ff'); grdV.addColorStop(1, '#ff00ff');
-            ctxV.fillStyle = grdV; ctxV.fillRect(0,0,1,256);
-            rgbTextureV = new THREE.CanvasTexture(cvsV);
-            rgbTextureV.wrapT = THREE.RepeatWrapping;
+        // CPU socket box (visual)
+        const socket = new THREE.Mesh(new THREE.BoxGeometry(0.04,0.0022,0.04,4,1,4), mats.metal); socket.position.set(0,0.0015,0); g.add(socket);
 
-            // Materiais
-            mats.pcb = new THREE.MeshStandardMaterial({ map: pcbTex, roughness: 0.6, metalness: 0.1 });
-            mats.metal = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, metalness: 0.9 });
-            mats.alum = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.4, metalness: 0.7 });
-            mats.gold = new THREE.MeshStandardMaterial({ color: 0xffcc00, roughness: 0.2, metalness: 1.0 });
-            mats.copper = new THREE.MeshStandardMaterial({ color: 0xc87533, roughness: 0.4, metalness: 0.6 });
-            
-            // Dois materiais RGB: Um para anéis/tiras horizontais, outro para barras verticais
-            mats.rgbH = new THREE.MeshBasicMaterial({ map: rgbTextureH }); 
-            mats.rgbV = new THREE.MeshBasicMaterial({ map: rgbTextureV }); 
+        // Sinais e dissipadores menores
+        const caps = new THREE.Group(); for(let i=0;i<30;i++){ const c=new THREE.Mesh(new THREE.BoxGeometry(0.004,0.006,0.004), mats.gold); c.position.set((Math.random()-0.5)*0.12, 0.004, (Math.random()-0.5)*0.12); caps.add(c); } caps.position.set(0.06,0,0.04); g.add(caps);
+
+        g.scale.set(1,1,1); g.position.y = 0.012; contentGroup.add(g);
+    }
+
+    function buildCPU_Cooler(){
+        const g = new THREE.Group();
+        // CPU real ~ 37mm IHS
+        const cpu = new THREE.Group(); const cpuSize=0.037; const ihs = new THREE.Mesh(new THREE.BoxGeometry(cpuSize,0.004, cpuSize,4,1,4), mats.alum); ihs.position.y=0.003; cpu.add(ihs);
+        cpu.position.set(0,0.0035,0); g.add(cpu);
+
+        // Cooler torre realista (torre de aletas com fan)
+        const tower = new THREE.Group();
+        const base = new THREE.Mesh(new THREE.BoxGeometry(0.06,0.008,0.06,8,1,8), mats.copper); base.position.y=0.01; tower.add(base);
+        // Aletas empilhadas
+        const finCount = 36; for(let i=0;i<finCount;i++){ const fin = new THREE.Mesh(new THREE.BoxGeometry(0.06,0.0018,0.045,4,1,4), mats.alum); fin.position.y = 0.02 + i*0.0018; fin.rotation.y = (i%2?0.01:-0.01); tower.add(fin); }
+
+        // Fan front
+        const fan = new THREE.Group(); const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.01,0.01,0.02,32), mats.metal); hub.rotation.x = Math.PI/2; fan.add(hub);
+        const bladeCount = 9; for(let i=0;i<bladeCount;i++){ const blade = new THREE.Mesh(new THREE.BoxGeometry(0.03,0.003,0.01,4,1,1), mats.metal); blade.position.x=0.045; const p=new THREE.Group(); p.rotation.z=(i/bladeCount)*Math.PI*2; p.add(blade); fan.add(p); }
+        fan.position.set(0, 0.055, 0.02); fans.push(fan); tower.add(fan);
+
+        tower.position.set(0,0,0); tower.userData={baseY:0.03,floatH:0.02}; floatParts.push(tower);
+        g.add(tower); contentGroup.add(g);
+    }
+
+    function buildGPU(){
+        const g = new THREE.Group();
+        // GPU length 304 mm (~0.304 m), height ~0.04
+        const length = 0.304, height=0.044, depth=0.14;
+        const body = new THREE.Mesh(new RoundedBoxGeometry(length, height, depth, 6, 0.01, 24), mats.metal);
+        body.position.y = height/2; body.castShadow=true; g.add(body);
+
+        // Lateral strip RGB
+        const strip = new THREE.Mesh(new THREE.BoxGeometry(length*0.82, 0.006, 0.004, 8,1,1), mats.rgbH);
+        strip.position.set(0, height*0.45, depth/2 - 0.006); g.add(strip);
+
+        // Triple fan set (mais realista)
+        const fanPositions = [-length*0.18, 0, length*0.18];
+        fanPositions.forEach((xpos)=>{
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(0.055,0.003,16,64), mats.rgbH); ring.rotation.x = -Math.PI/2; ring.position.set(xpos, height*0.7, 0); g.add(ring);
+            const fGroup = new THREE.Group(); const bladeCount=11; for(let k=0;k<bladeCount;k++){ const blade = new THREE.Mesh(new THREE.BoxGeometry(0.06,0.005,0.002,4,1,1), mats.metal); blade.position.x = 0.03; blade.rotation.x=0.25; const p = new THREE.Group(); p.rotation.z=(k/bladeCount)*Math.PI*2; p.add(blade); fGroup.add(p); } fGroup.position.set(xpos, height*0.66, 0); fans.push(fGroup); g.add(fGroup);
+        });
+
+        g.rotation.x = -Math.PI/2; g.position.y = 0.02; contentGroup.add(g);
+    }
+
+    function buildRAM(){
+        const g = new THREE.Group();
+        const length = 0.133, height = 0.042, thickness = 0.008;
+        for(let i=0;i<2;i++){
+            const stick = new THREE.Group();
+            const pcb = new THREE.Mesh(new THREE.BoxGeometry(length, thickness, 0.012, 8,1,4), mats.pcb); pcb.position.y = 0.006; stick.add(pcb);
+            const heats = new THREE.Mesh(new THREE.BoxGeometry(length, 0.03, 0.012, 8,4,2), mats.metal); heats.position.y = 0.02; stick.add(heats);
+            const rgb = new THREE.Mesh(new THREE.BoxGeometry(length*0.9, 0.006, 0.01, 8,1,1), mats.rgbH); rgb.position.y = 0.035; stick.add(rgb);
+            stick.position.set(0, 0.02, (i-0.5)*0.025); g.add(stick);
         }
+        g.position.y = 0.05; contentGroup.add(g);
+    }
 
-        // --- FUNÇÃO DE TROCA ---
-        window.selectModel = function(type) {
-            document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-            
-            const titles = {
-                'mobo': ['ASUS ROG MAXIMUS', 'E-ATX • Z790 CHIPSET'],
-                'cpu': ['RYZEN 9 + COOLER', 'VISTA EXPLODIDA • TOWER'],
-                'gpu': ['RTX 4090 SUPRIM', '24GB GDDR6X • FLOW THROUGH'],
-                'ram': ['TRIDENT Z5 RGB', 'DDR5 6400MHZ • CL32']
-            };
-            document.getElementById('model-title').innerText = titles[type][0];
-            document.getElementById('subtitle').innerText = titles[type][1];
+    // ---------- Interaction & Render ----------
+    function onSelect(){ if(reticle.visible){ const p=new THREE.Vector3(); camera.getWorldPosition(p); contentGroup.position.setFromMatrixPosition(reticle.matrix); if(Math.abs(p.x-contentGroup.position.x)>0.01) contentGroup.lookAt(p.x, contentGroup.position.y, p.z); contentGroup.visible=true; objectPlaced=true; document.getElementById('ar-guide').innerText='OBJETO FIXADO'; setTimeout(()=>document.getElementById('ar-guide').style.display='none',1700); }}
 
-            loadObject(type);
-        }
+    function onWindowResize(){ camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }
 
-        function loadObject(type) {
-            contentGroup.clear();
-            fans = []; floatParts = [];
+    function animate(){ renderer.setAnimationLoop(render); }
 
-            if(type === 'mobo') buildMobo();
-            if(type === 'cpu') buildCPU_Cooler();
-            if(type === 'gpu') buildGPU();
-            if(type === 'ram') buildRAM();
-        }
+    function render(timestamp, frame){ const t = timestamp/1000;
+        if(frame){ const session = renderer.xr.getSession(); if(!hitTestSourceRequested){ session.requestReferenceSpace('viewer').then(ref=> session.requestHitTestSource({ space: ref }).then(source=> hitTestSource = source)); hitTestSourceRequested = true; }
+            if(hitTestSource){ const hits = frame.getHitTestResults(hitTestSource); if(hits.length>0){ reticle.visible=true; reticle.matrix.fromArray(hits[0].getPose(renderer.xr.getReferenceSpace()).transform.matrix); if(!objectPlaced) document.getElementById('ar-guide').innerText='TOQUE PARA POSICIONAR'; } else reticle.visible=false; } }
 
-        // --- CONSTRUTORES ---
-
-        function buildMobo() {
-            const g = new THREE.Group();
-            // PCB (30x24cm)
-            const pcb = new THREE.Mesh(new RoundedBoxGeometry(0.24, 0.004, 0.30, 2, 0.01), mats.pcb);
-            pcb.receiveShadow = true; g.add(pcb);
-
-            // VRM Heatsinks (Robustos)
-            const vrm1 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.03, 0.14), mats.metal);
-            vrm1.position.set(-0.08, 0.015, -0.05); g.add(vrm1);
-            const vrm2 = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.03, 0.04), mats.metal);
-            vrm2.position.set(0, 0.015, -0.10); g.add(vrm2);
-
-            // Logo I/O (RGB Vertical)
-            const io = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.04, 0.14), mats.metal);
-            io.position.set(-0.09, 0.02, -0.05); g.add(io);
-            const logo = new THREE.Mesh(new THREE.PlaneGeometry(0.03, 0.08), mats.rgbV); // Vertical
-            logo.rotation.x = -Math.PI/2; logo.position.set(-0.09, 0.041, -0.05);
-            g.add(logo);
-
-            // PCIe Slots (Metal)
-            for(let i=0; i<3; i++) {
-                const s = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.008, 0.012), mats.alum);
-                s.position.set(0.01, 0.006, 0.04 + (i*0.06)); g.add(s);
-            }
-            contentGroup.add(g);
-        }
-
-        function buildCPU_Cooler() {
-            const g = new THREE.Group();
-            
-            // CPU
-            const cpu = new THREE.Group();
-            cpu.add(new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.002, 0.04), mats.pcb));
-            const ihs = new THREE.Mesh(new THREE.BoxGeometry(0.034, 0.004, 0.034), mats.alum);
-            ihs.position.y = 0.003; cpu.add(ihs);
-            g.add(cpu);
-
-            // Cooler
-            const cooler = new THREE.Group();
-            cooler.add(new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.005, 0.045), mats.copper));
-            // Aletas
-            const stack = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.10, 0.05), mats.alum);
-            stack.position.y = 0.06; cooler.add(stack);
-            
-            // Fan
-            const fanFrame = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.02), mats.metal);
-            fanFrame.position.set(0, 0.06, 0.04); cooler.add(fanFrame);
-
-            // Hélice (Pivô Centralizado)
-            const fanGroup = new THREE.Group();
-            fanGroup.position.set(0, 0.06, 0.052);
-            
-            // RGB Ring (Estático no frame, mas vamos por nas pás para efeito legal)
-            for(let k=0; k<9; k++) {
-                const b = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.012, 0.002), mats.rgbH); // Horizontal map
-                b.position.x = 0.03; b.rotation.x = 0.4;
-                const p = new THREE.Group();
-                p.rotation.z = (k/9)*Math.PI*2;
-                p.add(b);
-                fanGroup.add(p);
-            }
-            cooler.add(fanGroup);
-            fans.push(fanGroup);
-
-            // Animação Levitar
-            cpu.userData = { baseY: 0.01, floatH: 0.02 }; floatParts.push(cpu);
-            cooler.userData = { baseY: 0.005, floatH: 0.08 }; floatParts.push(cooler);
-            g.add(cooler);
-            contentGroup.add(g);
-        }
-
-        function buildGPU() {
-            const g = new THREE.Group();
-            const body = new THREE.Mesh(new RoundedBoxGeometry(0.30, 0.05, 0.13, 4, 0.01), mats.metal);
-            body.position.y = 0.03; body.castShadow = true; g.add(body);
-
-            // Strip Lateral (RGB Horizontal)
-            const strip = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.005, 0.002), mats.rgbH);
-            strip.position.set(0, 0.03, 0.066); // 0.5mm pra fora da face
-            g.add(strip);
-
-            // Fans
-            for(let i=-1; i<=1; i+=2) {
-                // Anel Fixo (RGB Horizontal curvado)
-                const ring = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.002, 16, 32), mats.rgbH);
-                ring.rotation.x = -Math.PI/2;
-                ring.position.set(i*0.09, 0.056, 0);
-                g.add(ring);
-
-                // Hélice (Gira)
-                const fGroup = new THREE.Group();
-                for(let k=0; k<9; k++) {
-                    const b = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.008, 0.002), mats.metal);
-                    b.position.x = 0.025; b.rotation.x = 0.3;
-                    const p = new THREE.Group();
-                    p.rotation.z = (k/9)*Math.PI*2;
-                    p.add(b);
-                    fGroup.add(p);
-                }
-                fGroup.rotation.x = -Math.PI/2;
-                fGroup.position.set(i*0.09, 0.05, 0);
-                g.add(fGroup);
-                fans.push(fGroup);
-            }
-            g.rotation.x = -Math.PI/2; g.position.y = 0.02;
-            contentGroup.add(g);
-        }
-
-        function buildRAM() {
-            const g = new THREE.Group();
-            for(let i=-1; i<=1; i+=2) {
-                const stick = new THREE.Group();
-                stick.add(new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.035, 0.002), mats.pcb));
-                const heat = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.03, 0.005), mats.metal);
-                heat.position.y = 0.002; stick.add(heat);
-                
-                // Barra RGB (Vertical Map para fluir ao longo do comprimento se UV for mapeado assim, 
-                // mas em BoxGeometry padrão, o topo usa UV 0..1.
-                // Vamos usar Horizontal Map e animar o offset X para correr de lado a lado).
-                const rgb = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.006, 0.006), mats.rgbH);
-                rgb.position.y = 0.019;
-                stick.add(rgb);
-
-                stick.position.z = i * 0.01;
-                g.add(stick);
-            }
-            g.position.y = 0.05;
-            contentGroup.add(g);
-        }
-
-        // --- LOOP ---
-        function onSelect() {
-            if (reticle.visible) {
-                const p = new THREE.Vector3(); camera.getWorldPosition(p);
-                contentGroup.position.setFromMatrixPosition(reticle.matrix);
-                if(Math.abs(p.x-contentGroup.position.x)>0.01) contentGroup.lookAt(p.x, contentGroup.position.y, p.z);
-                
-                contentGroup.visible = true;
-                objectPlaced = true;
-                document.getElementById('ar-guide').innerText = "OBJETO FIXADO";
-                setTimeout(() => document.getElementById('ar-guide').style.display='none', 2000);
-            }
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function animate() {
-            renderer.setAnimationLoop(render);
-        }
-
-        function render(timestamp, frame) {
-            const t = timestamp / 1000;
-
-            if (frame) {
-                const session = renderer.xr.getSession();
-                if (!hitTestSourceRequested) {
-                    session.requestReferenceSpace('viewer').then(ref => 
-                        session.requestHitTestSource({ space: ref }).then(source => hitTestSource = source));
-                    hitTestSourceRequested = true;
-                }
-                if (hitTestSource) {
-                    const hits = frame.getHitTestResults(hitTestSource);
-                    if (hits.length > 0) {
-                        reticle.visible = true;
-                        reticle.matrix.fromArray(hits[0].getPose(renderer.xr.getReferenceSpace()).transform.matrix);
-                        if(!objectPlaced) document.getElementById('ar-guide').innerText = "TOQUE PARA POSICIONAR";
-                    } else reticle.visible = false;
-                }
-            }
-
-            if(contentGroup.visible || !renderer.xr.isPresenting) {
-                fans.forEach(f => f.rotation.z -= 0.2);
-                
-                floatParts.forEach(p => p.position.y = p.userData.baseY + (Math.sin(t*2)*0.5+0.5)*p.userData.floatH);
-                
-                // Animar Texturas RGB
-                if(rgbTextureH) rgbTextureH.offset.x -= 0.01; // Corre de lado
-                if(rgbTextureV) rgbTextureV.offset.y -= 0.01; // Corre pra cima
-
-                if(!renderer.xr.isPresenting) contentGroup.rotation.y += 0.003;
-            }
-            renderer.render(scene, camera);
-        }
+        if(contentGroup.visible || !renderer.xr.isPresenting){ fans.forEach(f=> f.rotation.z -= 0.18 ); floatParts.forEach(p=> p.position.y = p.userData.baseY + (Math.sin(t*2)*0.5+0.5)*p.userData.floatH ); if(rgbTextureH) rgbTextureH.offset.x -= 0.012; if(rgbTextureV) rgbTextureV.offset.y -= 0.012; if(!renderer.xr.isPresenting) contentGroup.rotation.y += 0.0025; }
+        renderer.render(scene, camera);
+    }
     </script>
 </body>
 </html>
