@@ -3,123 +3,202 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Hardware AR Suite - High Fidelity</title>
+    <title>Hardware AR Suite - Ultimate</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        /* --- ESTILO GERAL E UI --- */
+        /* --- DESIGN SYSTEM --- */
+        :root {
+            --primary: #00ff88;
+            --accent: #00ccff;
+            --glass: rgba(10, 15, 20, 0.65);
+            --border: rgba(255, 255, 255, 0.15);
+        }
+
         body { 
-            margin: 0; overflow: hidden; background-color: #0a0a0a; 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0; overflow: hidden; background-color: #050505; 
+            font-family: 'Rajdhani', sans-serif;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
+
+        /* --- UI LAYOUT --- */
         
-        /* Menu de Seleção (Inferior) */
-        #selection-bar {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 15px;
-            background: rgba(20, 20, 20, 0.8);
-            backdrop-filter: blur(10px);
-            padding: 10px 20px;
-            border-radius: 30px;
-            border: 1px solid rgba(255,255,255,0.1);
+        /* Barra de Seleção (Agora acima do botão AR) */
+        #selection-dock {
+            position: absolute; 
+            bottom: 100px; /* Espaço seguro para o botão AR nativo */
+            left: 50%; transform: translateX(-50%);
+            display: flex; gap: 12px;
+            padding: 8px;
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             z-index: 20;
-            transition: opacity 0.3s;
+            transition: bottom 0.3s ease;
         }
 
-        .item-btn {
-            background: transparent; border: none; color: white;
-            display: flex; flex-direction: column; align-items: center;
-            cursor: pointer; opacity: 0.6; transition: all 0.2s;
+        .model-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid transparent;
+            color: white;
+            width: 60px; height: 60px;
+            border-radius: 18px;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
         }
 
-        .item-btn.active { opacity: 1; transform: scale(1.1); color: #00ff88; }
-        
-        .item-icon { font-size: 24px; margin-bottom: 5px; background: #333; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-        .item-name { font-size: 10px; font-weight: bold; letter-spacing: 1px; }
-
-        /* Painel de Instruções (Centro) */
-        #instruction-panel {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            text-align: center; pointer-events: none; z-index: 15;
-            width: 80%;
+        .model-btn.active {
+            background: rgba(0, 255, 136, 0.15);
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.2);
         }
 
-        .instruction-text {
-            color: white; font-size: 16px; font-weight: 600;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-            background: rgba(0,0,0,0.6);
-            padding: 10px 20px; border-radius: 8px;
+        .btn-icon { font-size: 22px; margin-bottom: 2px; }
+        .btn-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+
+        /* Painel de Informações (Topo) */
+        #info-panel {
+            position: absolute; top: 0; left: 0; width: 100%;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
+            padding: 20px;
+            box-sizing: border-box;
+            pointer-events: none;
+            z-index: 15;
+        }
+
+        h1 {
+            margin: 0; color: white; font-size: 24px; 
+            text-shadow: 0 0 10px rgba(0,255,136,0.5);
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        .status-badge {
+            background: var(--primary); color: black;
+            padding: 2px 8px; border-radius: 4px;
+            font-size: 12px; font-weight: bold;
+        }
+
+        #specs-container {
+            margin-top: 8px;
+            color: #aaa; font-size: 14px;
+            display: flex; gap: 15px;
+        }
+
+        .spec-item { display: flex; align-items: center; gap: 5px; }
+        .spec-item i { color: var(--accent); }
+
+        /* Guia de AR (Centro) */
+        #ar-guide {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center; pointer-events: none;
+            display: none; width: 100%;
+        }
+
+        .guide-box {
+            background: rgba(0,0,0,0.8);
+            border: 1px solid var(--primary);
+            color: white; padding: 15px 25px;
+            border-radius: 50px;
+            font-size: 16px; font-weight: 600;
             display: inline-block;
-            border-left: 3px solid #00ff88;
+            animation: pulse 2s infinite;
         }
 
-        /* Ícone animado de "Mover Celular" */
-        #scan-icon {
-            width: 60px; height: 100px; border: 3px solid rgba(255,255,255,0.5);
-            border-radius: 10px; margin: 0 auto 20px auto;
-            animation: scan-move 2s infinite ease-in-out;
-            display: none; /* Só aparece no AR */
-        }
-        @keyframes scan-move {
-            0% { transform: translateX(-30px) rotateY(-15deg); }
-            50% { transform: translateX(30px) rotateY(15deg); }
-            100% { transform: translateX(-30px) rotateY(-15deg); }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.4); }
+            70% { box-shadow: 0 0 0 15px rgba(0, 255, 136, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
         }
 
-        /* Informações Técnicas (Topo) */
-        #tech-specs {
-            position: absolute; top: 20px; left: 20px;
-            color: #00ff88; font-family: 'Courier New', monospace;
-            font-size: 12px; text-shadow: 0 0 5px rgba(0, 255, 136, 0.5);
-            pointer-events: none; z-index: 15;
+        /* Loader */
+        .loader {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 50px; height: 50px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+            z-index: 100;
+        }
+        @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        /* Warning HTTPS */
+        #https-warning {
+            position: absolute; inset: 0; background: #000; z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: white; text-align: center; padding: 20px; display: none;
         }
 
-        /* Aviso de Erro */
-        #ar-warning {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); color: white;
-            display: flex; align-items: center; justify-content: center; flex-direction: column;
-            text-align: center; z-index: 1000; display: none;
+        /* Customização do botão AR nativo do Three.js */
+        button#ARButton {
+            background-color: white !important;
+            color: black !important;
+            border-radius: 30px !important;
+            font-family: 'Rajdhani', sans-serif !important;
+            font-weight: bold !important;
+            bottom: 30px !important; /* Força posição inferior */
+            width: 160px !important;
+            opacity: 1 !important;
         }
 
-        .loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); color: #00ff88; font-family: monospace; }
     </style>
 </head>
 <body>
 
-    <!-- UI de Seleção -->
-    <div id="selection-bar">
-        <button class="item-btn active" onclick="selectModel('cpu')">
-            <div class="item-icon">⚡</div>
-            <span class="item-name">CPU</span>
-        </button>
-        <button class="item-btn" onclick="selectModel('ram')">
-            <div class="item-icon">💾</div>
-            <span class="item-name">RAM</span>
-        </button>
-        <button class="item-btn" onclick="selectModel('gpu')">
-            <div class="item-icon">🎮</div>
-            <span class="item-name">GPU</span>
-        </button>
+    <!-- Topo: Informações -->
+    <div id="info-panel">
+        <h1>
+            <span id="model-title">Hardware Suite</span>
+            <span class="status-badge">AR READY</span>
+        </h1>
+        <div id="specs-container">
+            <div class="spec-item">📐 Escala: 1:1</div>
+            <div class="spec-item">⚡ PBR: Ativo</div>
+            <div class="spec-item">🎮 FPS: <span id="fps-counter">60</span></div>
+        </div>
     </div>
 
-    <!-- Painel de Instruções -->
-    <div id="instruction-panel" style="display: none;">
-        <div id="scan-icon"></div>
-        <div class="instruction-text" id="instruction-text">Iniciando AR...</div>
+    <!-- Centro: Guia de AR -->
+    <div id="ar-guide">
+        <div class="guide-box" id="guide-text">Mova o celular para detectar o chão</div>
     </div>
 
-    <!-- Specs Técnicas -->
-    <div id="tech-specs">
-        SYSTEM: ONLINE<br>
-        <span id="model-name">RYZEN 9 7950X</span><br>
-        ESCALA: 1:1 (REAL)
+    <!-- Baixo: Seleção (Acima do botão AR) -->
+    <div id="selection-dock">
+        <div class="model-btn active" onclick="selectModel('mobo')">
+            <div class="btn-icon">🎛️</div>
+            <div class="btn-label">MOBO</div>
+        </div>
+        <div class="model-btn" onclick="selectModel('gpu')">
+            <div class="btn-icon">📼</div>
+            <div class="btn-label">GPU</div>
+        </div>
+        <div class="model-btn" onclick="selectModel('ram')">
+            <div class="btn-icon">💾</div>
+            <div class="btn-label">RAM</div>
+        </div>
+        <div class="model-btn" onclick="selectModel('cpu')">
+            <div class="btn-icon">💠</div>
+            <div class="btn-label">CPU</div>
+        </div>
     </div>
 
-    <div id="ar-warning">
-        <h2>⚠️ HTTPS Necessário</h2>
-        <p>Para usar AR, acesse via HTTPS ou Localhost.</p>
+    <div id="https-warning">
+        <h2 style="color: #ff4444">⚠️ Erro de Segurança</h2>
+        <p>A câmera AR requer HTTPS ou Localhost.</p>
     </div>
-    <div class="loader" id="loader">CARREGANDO ASSETS...</div>
+
+    <div class="loader" id="loader"></div>
 
     <!-- Import Map -->
     <script type="importmap">
@@ -135,23 +214,21 @@
         import * as THREE from 'three';
         import { ARButton } from 'three/addons/webxr/ARButton.js';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
-        // Segurança HTTPS
+        // --- SETUP INICIAL ---
         if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-            document.getElementById('ar-warning').style.display = 'flex';
+            document.getElementById('https-warning').style.display = 'flex';
             document.getElementById('loader').style.display = 'none';
         }
 
-        // --- VARIÁVEIS ---
-        let camera, scene, renderer, controller;
-        let reticle, contentGroup;
+        let camera, scene, renderer;
+        let contentGroup, reticle, controller;
         let hitTestSource = null, hitTestSourceRequested = false;
         let objectPlaced = false;
-        let currentType = 'cpu'; // cpu, ram, gpu
+        let materials = {};
         let animatedObjects = { fans: [], leds: [] };
-
-        // Materiais Compartilhados (Cache)
-        const materials = {};
+        let lastTime = 0;
 
         init();
         animate();
@@ -165,17 +242,22 @@
             // Câmera
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-            // Luzes
-            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
-            hemiLight.position.set(0, 1, 0);
-            scene.add(hemiLight);
+            // Iluminação "Estúdio Gamer"
+            const ambient = new THREE.HemisphereLight(0xffffff, 0x222222, 1); 
+            scene.add(ambient);
 
-            const dirLight = new THREE.DirectionalLight(0xffffff, 3);
-            dirLight.position.set(1, 2, 1);
-            dirLight.castShadow = true;
-            dirLight.shadow.mapSize.width = 1024;
-            dirLight.shadow.mapSize.height = 1024;
-            scene.add(dirLight);
+            const mainLight = new THREE.DirectionalLight(0xffffff, 3);
+            mainLight.position.set(0.5, 2, 0.5);
+            mainLight.castShadow = true;
+            mainLight.shadow.mapSize.width = 2048;
+            mainLight.shadow.mapSize.height = 2048;
+            mainLight.shadow.bias = -0.0001;
+            scene.add(mainLight);
+
+            const rimLight = new THREE.SpotLight(0x00ff88, 5);
+            rimLight.position.set(-1, 1, -1);
+            rimLight.lookAt(0,0,0);
+            scene.add(rimLight);
 
             // Renderer
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -187,235 +269,259 @@
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
             container.appendChild(renderer.domElement);
 
-            // Setup AR Button com suporte a DOM Overlay (para UI funcionar em AR no Android)
-            const arButton = ARButton.createButton(renderer, { 
+            // Botão AR (Customizado via CSS)
+            const arBtn = ARButton.createButton(renderer, { 
                 requiredFeatures: ['hit-test', 'dom-overlay'],
-                domOverlay: { root: document.body } 
+                domOverlay: { root: document.body }
             });
-            document.body.appendChild(arButton);
+            document.body.appendChild(arBtn);
 
-            // Inicializar Materiais
-            initMaterials();
-
-            // Grupo Principal
+            // Grupo de Conteúdo
             contentGroup = new THREE.Group();
-            contentGroup.visible = false; // Só aparece ao tocar
+            contentGroup.visible = false;
             scene.add(contentGroup);
 
-            // Carregar modelo inicial
-            loadModel('cpu');
+            // Materiais
+            initMaterials();
 
-            // Retículo (Mira)
+            // Retículo
             reticle = new THREE.Mesh(
                 new THREE.RingGeometry(0.1, 0.11, 32).rotateX(-Math.PI / 2),
-                new THREE.MeshBasicMaterial({ color: 0xffffff })
+                new THREE.MeshBasicMaterial({ color: 0x00ff88 })
             );
             reticle.matrixAutoUpdate = false;
             reticle.visible = false;
             scene.add(reticle);
 
-            // Controller (Toque)
+            // Controller
             controller = renderer.xr.getController(0);
             controller.addEventListener('select', onSelect);
             scene.add(controller);
 
-            // Controles para PC (Debug)
+            // Controles PC
             const controls = new OrbitControls(camera, renderer.domElement);
-            controls.target.set(0, 0, 0);
+            controls.target.set(0, 0.05, 0);
             controls.update();
 
-            // Eventos UI AR
-            renderer.xr.addEventListener('sessionstart', onARStart);
-            renderer.xr.addEventListener('sessionend', onAREnd);
+            // Eventos AR
+            renderer.xr.addEventListener('sessionstart', () => {
+                document.getElementById('ar-guide').style.display = 'block';
+                contentGroup.visible = false;
+                objectPlaced = false;
+            });
+            renderer.xr.addEventListener('sessionend', () => {
+                document.getElementById('ar-guide').style.display = 'none';
+                contentGroup.visible = true;
+                contentGroup.position.set(0,0,0);
+                contentGroup.rotation.set(0,0,0);
+                // Reset câmera PC
+                camera.position.set(0, 0.3, 0.4);
+                camera.lookAt(0,0,0);
+            });
 
+            // Carregar Inicial
+            loadModel('mobo');
+            
             window.addEventListener('resize', onWindowResize);
             document.getElementById('loader').style.display = 'none';
         }
 
-        // --- MATERIAIS & TEXTURAS ---
         function initMaterials() {
             const pcbTex = createPCBTexture();
-            
-            materials.pcb = new THREE.MeshStandardMaterial({ map: pcbTex, roughness: 0.5, metalness: 0.1 });
-            materials.metalDark = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.3, metalness: 0.8 });
-            materials.gold = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.2, metalness: 1.0 });
-            materials.aluminum = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.3, metalness: 0.7 });
-            materials.plastic = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6 });
-            materials.rgb = new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xff0055, emissiveIntensity: 2 });
-            materials.silicon = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.1, metalness: 0.5 });
+            materials.pcb = new THREE.MeshStandardMaterial({ 
+                map: pcbTex, color: 0x222222, roughness: 0.4, metalness: 0.2 
+            });
+            materials.metalBlack = new THREE.MeshStandardMaterial({ 
+                color: 0x111111, roughness: 0.2, metalness: 0.8 
+            });
+            materials.aluminum = new THREE.MeshStandardMaterial({ 
+                color: 0xaaaaaa, roughness: 0.3, metalness: 0.9 
+            });
+            materials.gold = new THREE.MeshStandardMaterial({ 
+                color: 0xffd700, roughness: 0.1, metalness: 1.0 
+            });
+            materials.rgb = new THREE.MeshStandardMaterial({ 
+                color: 0x000000, emissive: 0xff0055, emissiveIntensity: 2 
+            });
         }
 
         function createPCBTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512; canvas.height = 512;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#0a1a10'; ctx.fillRect(0,0,512,512);
-            ctx.strokeStyle = '#1f3d2b'; ctx.lineWidth = 3;
-            for(let i=0; i<100; i++) {
-                ctx.beginPath(); ctx.moveTo(Math.random()*512, Math.random()*512);
-                ctx.lineTo(Math.random()*512, Math.random()*512); ctx.stroke();
+            const c = document.createElement('canvas'); c.width=512; c.height=512;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle='#050505'; ctx.fillRect(0,0,512,512);
+            ctx.strokeStyle='#1a1a1a'; ctx.lineWidth=2;
+            for(let i=0;i<50;i++){
+                ctx.beginPath(); ctx.moveTo(Math.random()*512,Math.random()*512);
+                ctx.lineTo(Math.random()*512,Math.random()*512); ctx.stroke();
             }
-            const tex = new THREE.CanvasTexture(canvas);
-            tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
-            return tex;
+            return new THREE.CanvasTexture(c);
         }
 
-        // --- GERADORES DE MODELOS (PROCEDURAL) ---
+        // --- GERADORES DE MODELOS (DIMENSÕES REAIS AUMENTADAS) ---
+        
+        // 1. Placa Mãe (ATX: 30.5cm x 24.4cm)
+        function createMobo() {
+            const g = new THREE.Group();
+            // Base PCB
+            const pcb = new THREE.Mesh(new RoundedBoxGeometry(0.244, 0.004, 0.305, 4, 0.01), materials.pcb);
+            pcb.castShadow = true; pcb.receiveShadow = true;
+            g.add(pcb);
 
-        // 1. CPU (Ryzen Style)
-        function createCPU() {
-            const group = new THREE.Group();
-            // PCB: 40mm
-            const pcb = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.002, 0.04), materials.pcb);
-            pcb.castShadow = true;
-            group.add(pcb);
-            // IHS (Heatspreader)
-            const ihs = new THREE.Mesh(new THREE.BoxGeometry(0.034, 0.004, 0.034), materials.aluminum);
-            ihs.position.y = 0.003; ihs.castShadow = true;
-            group.add(ihs);
-            return group;
-        }
+            // VRM Heatsinks (Grande volume)
+            const vrmTop = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.03, 0.04), materials.metalBlack);
+            vrmTop.position.set(0, 0.015, -0.12); g.add(vrmTop);
+            const vrmLeft = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.03, 0.12), materials.metalBlack);
+            vrmLeft.position.set(-0.08, 0.015, -0.05); g.add(vrmLeft);
 
-        // 2. RAM (DDR5 Stick)
-        function createRAM() {
-            const group = new THREE.Group();
-            // PCB Longo: 133mm x 30mm
-            const pcb = new THREE.Mesh(new THREE.BoxGeometry(0.133, 0.03, 0.002), materials.pcb);
-            pcb.position.y = 0.015; // Metade da altura para pivot no chão
-            group.add(pcb);
-
-            // Chips de Memória
-            const chipGeo = new THREE.BoxGeometry(0.01, 0.008, 0.001);
-            for(let i=0; i<8; i++) {
-                const chip = new THREE.Mesh(chipGeo, materials.silicon);
-                chip.position.set((i*0.015) - 0.05, 0.015, 0.002);
-                group.add(chip);
+            // PCIE Slots
+            for(let i=0; i<3; i++) {
+                const slot = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.008, 0.01), materials.plastic); // materials.plastic n existe, fallback
+                slot.material = new THREE.MeshStandardMaterial({color: 0x111111});
+                slot.position.set(0.01, 0.005, 0.05 + (i*0.06));
+                g.add(slot);
+                // Metal shield
+                const shield = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.009, 0.004), materials.aluminum);
+                shield.position.set(0.01, 0.005, 0.05 + (i*0.06) - 0.003);
+                g.add(shield);
             }
 
-            // Dissipador de Calor (Heatspreader)
-            const heatspreader = new THREE.Mesh(new THREE.BoxGeometry(0.135, 0.035, 0.006), materials.metalDark);
-            heatspreader.position.y = 0.018;
-            heatspreader.castShadow = true;
-            group.add(heatspreader);
+            // Chipset RGB
+            const chipset = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.01, 0.08), materials.metalBlack);
+            chipset.position.set(0.05, 0.005, 0.10); g.add(chipset);
+            const rgbLogo = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.011, 0.04), materials.rgb);
+            rgbLogo.position.set(0.05, 0.005, 0.10); g.add(rgbLogo);
+            animatedObjects.leds.push(rgbLogo.material);
 
-            // Barra RGB
-            const rgbBar = new THREE.Mesh(new THREE.BoxGeometry(0.135, 0.004, 0.006), materials.rgb);
-            rgbBar.position.y = 0.037;
-            group.add(rgbBar);
-            
-            animatedObjects.leds.push(rgbBar.material);
-            return group;
+            return g;
         }
 
-        // 3. GPU (RTX Style)
+        // 2. GPU (RTX 4090: ~34cm length)
         function createGPU() {
-            const group = new THREE.Group();
-            // Tamanho real aprox: 30cm comprimento
-            
-            // Bloco Principal (Heatsink + Shroud)
-            const body = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.06, 0.12), materials.metalDark);
-            body.position.set(0, 0.03, 0);
-            body.castShadow = true;
-            group.add(body);
+            const g = new THREE.Group();
+            // Corpo Principal (Gigante)
+            const body = new THREE.Mesh(new RoundedBoxGeometry(0.32, 0.08, 0.14, 4, 0.01), materials.metalBlack);
+            body.position.y = 0.04; body.castShadow = true;
+            g.add(body);
 
-            // Backplate
-            const backplate = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.002, 0.12), materials.aluminum);
-            backplate.position.set(0, 0.061, 0);
-            group.add(backplate);
-
-            // Ventoinhas (3 Fans)
-            const fanGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.005, 16);
+            // Fans (3x)
             for(let i=-1; i<=1; i++) {
-                const fan = new THREE.Mesh(fanGeo, materials.plastic);
-                fan.rotation.x = Math.PI / 2;
-                fan.position.set(i * 0.09, -0.001, 0); // Embaixo
+                const fan = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.01, 32), materials.aluminum);
+                fan.rotation.x = Math.PI/2;
+                fan.position.set(i*0.095, 0.04, 0.071); // Frente
                 
-                // Pás da ventoinha (visual simples)
-                const blade = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.005, 0.01), materials.plastic);
+                const blade = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.005, 0.002), new THREE.MeshStandardMaterial({color: 0x111111}));
                 fan.add(blade);
-                const blade2 = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.005, 0.06), materials.plastic);
-                fan.add(blade2);
-
-                group.add(fan);
+                const blade2 = blade.clone(); blade2.rotation.y = Math.PI/2; fan.add(blade2);
+                
+                g.add(fan);
                 animatedObjects.fans.push(fan);
             }
-            
-            // RGB Logo Lateral
-            const logo = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.01, 0.002), materials.rgb);
-            logo.position.set(0, 0.03, 0.061); // Lado
-            group.add(logo);
-            animatedObjects.leds.push(logo.material);
 
-            return group;
+            // RGB Strip Lateral
+            const rgb = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.005, 0.002), materials.rgb);
+            rgb.position.set(0, 0.08, 0.07); g.add(rgb);
+            animatedObjects.leds.push(rgb.material);
+
+            return g;
         }
 
-        // --- LÓGICA DE SELEÇÃO ---
-        window.selectModel = function(type) {
-            currentType = type;
+        // 3. CPU (Com Base de Display para não ficar minúsculo)
+        function createCPU() {
+            const g = new THREE.Group();
             
-            // Atualizar UI
-            document.querySelectorAll('.item-btn').forEach(btn => btn.classList.remove('active'));
+            // BASE DE DISPLAY (Pedestal Flutuante)
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.02, 64), materials.metalBlack);
+            base.position.y = 0.01; base.receiveShadow = true;
+            g.add(base);
+            
+            // Anel RGB na base
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.002, 16, 64), materials.rgb);
+            ring.rotation.x = Math.PI/2; ring.position.y = 0.021;
+            g.add(ring); animatedObjects.leds.push(ring.material);
+
+            // CPU Real (4cm) flutuando sobre a base
+            const cpuGroup = new THREE.Group();
+            cpuGroup.position.y = 0.05;
+            
+            // PCB
+            const pcb = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.002, 0.04), materials.pcb);
+            cpuGroup.add(pcb);
+            // IHS
+            const ihs = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.004, 0.032), materials.aluminum);
+            ihs.position.y = 0.003;
+            cpuGroup.add(ihs);
+
+            g.add(cpuGroup);
+            
+            // Animação de rotação específica para o CPU
+            g.userData = { isCPU: true, rotator: cpuGroup };
+
+            return g;
+        }
+
+        function createRAM() {
+            const g = new THREE.Group();
+            // Pente de Memória (14cm)
+            const stick = new THREE.Group();
+            
+            // Dissipador
+            const heat = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.04, 0.008), materials.metalBlack);
+            heat.castShadow = true;
+            stick.add(heat);
+
+            // RGB Topo
+            const rgb = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.005, 0.008), materials.rgb);
+            rgb.position.y = 0.02; 
+            stick.add(rgb); animatedObjects.leds.push(rgb.material);
+
+            // Contatos Dourados
+            const gold = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.005, 0.006), materials.gold);
+            gold.position.y = -0.02;
+            stick.add(gold);
+
+            // Posicionar verticalmente no chão (como se estivesse em pé ou flutuando)
+            stick.position.y = 0.04; // Centro do objeto a 4cm do chão
+            g.add(stick);
+            return g;
+        }
+
+        window.selectModel = function(type) {
+            // UI Update
+            document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
             event.currentTarget.classList.add('active');
             
-            // Atualizar Texto
-            const names = {
-                'cpu': 'RYZEN 9 7950X',
-                'ram': 'DDR5 TRIDENT Z (16GB)',
-                'gpu': 'RTX 4090 FOUNDERS'
-            };
-            document.getElementById('model-name').innerText = names[type];
+            // Titles
+            const titles = { 'mobo': 'ASUS ROG MAXIMUS', 'gpu': 'RTX 4090 FE', 'cpu': 'INTEL CORE i9', 'ram': 'G.SKILL TRIDENT' };
+            document.getElementById('model-title').innerText = titles[type];
 
-            // Trocar Modelo 3D
-            loadModel(type);
-        }
-
-        function loadModel(type) {
-            // Limpar anterior
+            // 3D Update
             contentGroup.clear();
-            animatedObjects.fans = [];
-            animatedObjects.leds = [];
-
+            animatedObjects = { fans: [], leds: [] };
+            
             let mesh;
+            if(type === 'mobo') mesh = createMobo();
+            if(type === 'gpu') mesh = createGPU();
             if(type === 'cpu') mesh = createCPU();
             if(type === 'ram') mesh = createRAM();
-            if(type === 'gpu') mesh = createGPU();
 
             contentGroup.add(mesh);
         }
 
-        // --- LÓGICA AR / HIT TEST ---
+        // --- HIT TEST & AR ---
         function onSelect() {
             if (reticle.visible) {
                 contentGroup.position.setFromMatrixPosition(reticle.matrix);
+                // Fazer o objeto olhar para a câmera (apenas rotação Y)
+                const camPos = new THREE.Vector3().setFromMatrixPosition(camera.matrixWorld);
+                contentGroup.lookAt(camPos.x, contentGroup.position.y, camPos.z);
+                
                 contentGroup.visible = true;
-                contentGroup.lookAt(camera.position.x, contentGroup.position.y, camera.position.z); // Virar pro usuario
                 objectPlaced = true;
-                updateInstruction("Objeto Posicionado!");
-                setTimeout(() => updateInstruction(""), 2000);
-            }
-        }
-
-        function onARStart() {
-            document.getElementById('instruction-panel').style.display = 'block';
-            document.getElementById('scan-icon').style.display = 'block';
-            updateInstruction("Aponte para o chão e mova lentamente");
-            contentGroup.visible = false;
-            objectPlaced = false;
-        }
-
-        function onAREnd() {
-            document.getElementById('instruction-panel').style.display = 'none';
-            contentGroup.visible = true; // Volta a mostrar no modo PC
-            contentGroup.position.set(0,0,0);
-        }
-
-        function updateInstruction(text) {
-            const el = document.getElementById('instruction-text');
-            if(!text) {
-                el.style.display = 'none';
-            } else {
-                el.style.display = 'inline-block';
-                el.innerText = text;
+                
+                const guide = document.getElementById('guide-text');
+                guide.innerText = "Objeto Posicionado!";
+                guide.style.borderColor = "#00ff88";
+                setTimeout(() => document.getElementById('ar-guide').style.display = 'none', 1500);
             }
         }
 
@@ -425,61 +531,60 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // --- LOOP ---
         function animate() {
             renderer.setAnimationLoop(render);
         }
 
         function render(timestamp, frame) {
-            const delta = timestamp;
+            const delta = timestamp - lastTime;
+            lastTime = timestamp;
 
+            // AR Logic
             if (frame) {
-                const referenceSpace = renderer.xr.getReferenceSpace();
+                const refSpace = renderer.xr.getReferenceSpace();
                 const session = renderer.xr.getSession();
 
                 if (!hitTestSourceRequested) {
-                    session.requestReferenceSpace('viewer').then((refSpace) => {
-                        session.requestHitTestSource({ space: refSpace }).then((source) => {
-                            hitTestSource = source;
-                        });
+                    session.requestReferenceSpace('viewer').then(space => {
+                        session.requestHitTestSource({ space }).then(source => hitTestSource = source);
                     });
                     hitTestSourceRequested = true;
                 }
 
                 if (hitTestSource) {
-                    const hitTestResults = frame.getHitTestResults(hitTestSource);
-                    if (hitTestResults.length > 0) {
-                        const hit = hitTestResults[0];
+                    const hits = frame.getHitTestResults(hitTestSource);
+                    if (hits.length > 0) {
+                        const hit = hits[0];
                         reticle.visible = true;
-                        reticle.matrix.fromArray(hit.getPose(referenceSpace).transform.matrix);
-                        
-                        if(!objectPlaced) {
-                            updateInstruction("Superfície detectada! Toque para colocar");
-                            document.getElementById('scan-icon').style.display = 'none';
-                        }
+                        reticle.matrix.fromArray(hit.getPose(refSpace).transform.matrix);
+                        if (!objectPlaced) document.getElementById('guide-text').innerText = "Toque para posicionar";
                     } else {
                         reticle.visible = false;
-                        if(!objectPlaced) updateInstruction("Mova o celular para escanear...");
+                        if (!objectPlaced) document.getElementById('guide-text').innerText = "Mova o celular para detectar o chão";
                     }
                 }
             }
 
-            // Animações
+            // Animations
             if(contentGroup.visible || !renderer.xr.isPresenting) {
-                // Girar fans
-                animatedObjects.fans.forEach(fan => {
-                    fan.rotation.y -= 0.15;
+                // Fans
+                animatedObjects.fans.forEach(f => f.rotation.z -= 0.15);
+                
+                // LEDs Pulse
+                const hue = (timestamp * 0.0005) % 1;
+                animatedObjects.leds.forEach(l => l.emissive.setHSL(hue, 1, 0.5));
+
+                // CPU Special Rotation
+                contentGroup.children.forEach(child => {
+                    if(child.userData.isCPU) {
+                        child.userData.rotator.rotation.y += 0.01;
+                        child.userData.rotator.position.y = 0.05 + Math.sin(timestamp * 0.002) * 0.005;
+                    }
                 });
 
-                // Pulsar LEDs
-                animatedObjects.leds.forEach(mat => {
-                    const hue = (delta * 0.0005) % 1;
-                    mat.emissive.setHSL(hue, 1, 0.5);
-                });
-
-                // Levitação suave se for apenas showcase (PC) ou se usuário quiser
+                // Rotação suave no modo Showcase (PC)
                 if(!renderer.xr.isPresenting) {
-                    contentGroup.rotation.y += 0.005;
+                    contentGroup.rotation.y += 0.002;
                 }
             }
 
@@ -488,4 +593,5 @@
     </script>
 </body>
 </html>
+
 
