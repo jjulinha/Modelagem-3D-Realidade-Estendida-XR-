@@ -608,29 +608,17 @@
             }
         }
 
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-        ```
-            console.time(`Generating Fan Geo ${ key } `);
-            const shape = new THREE.Shape();
-            shape.moveTo(0, 0);
-            shape.bezierCurveTo(radius * 0.2, radius * 0.1, radius * 0.5, radius * 0.4, radius, radius * 0.3);
-            shape.bezierCurveTo(radius * 0.9, radius * 0.6, radius * 0.4, radius * 0.5, 0, 0.1);
+        const extrudeSettings = {
+            steps: 2, depth: 0.002, bevelEnabled: true, bevelThickness: 0.0005, bevelSize: 0.0005, bevelSegments: 2
+        };
 
-            const extrudeSettings = {
-                steps: 2, depth: 0.002, bevelEnabled: true, bevelThickness: 0.0005, bevelSize: 0.0005, bevelSegments: 2
-            };
+        const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        geo.translate(0, -0.05 * radius, 0);
+        geo.rotateX(0.2);
 
-            const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-            geo.translate(0, -0.05 * radius, 0);
-            geo.rotateX(0.2);
-
-            fanGeomCache[key] = geo;
-            console.timeEnd(`Generating Fan Geo ${ key }`);
-            return geo;
+        fanGeomCache[key] = geo;
+        console.timeEnd(`Generating Fan Geo ${key}`);
+        return geo;
         }
 
         function createFanAssembly(radius, bladeCount, colorMat) {
@@ -815,7 +803,7 @@
 
         function render(timestamp, frame) {
             const t = timestamp / 1000;
-            
+
             if (frame) {
                 // AR MODE
                 const session = renderer.xr.getSession();
@@ -838,7 +826,7 @@
                 }
             } else {
                 // PREVIEW MODE (Auto-Rotate)
-                if(controls) controls.update();
+                if (controls) controls.update();
             }
 
             if (contentGroup.visible || !renderer.xr.isPresenting) {
