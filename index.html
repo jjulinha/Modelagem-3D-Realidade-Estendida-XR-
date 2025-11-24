@@ -336,6 +336,12 @@
                 contentGroup.visible = true;
                 contentGroup.position.set(0, 0, 0);
                 camera.position.set(0, 0.3, 0.3); camera.lookAt(0, 0, 0);
+
+                // FIX: Reset AR Hit Test state
+                hitTestSource = null;
+                hitTestSourceRequested = false;
+                objectPlaced = false;
+                reticle.visible = false;
             });
 
             window.addEventListener('resize', onWindowResize);
@@ -359,10 +365,13 @@
             });
 
             // Carregar Assets (Async)
-            const [pcbTex, stickerTex, metalTex] = await Promise.all([
+            const [pcbTex, stickerTex, metalTex, whitePlasTex, blackPlasTex, copperTex] = await Promise.all([
                 loadTex('assets/pcb.png'),
                 loadTex('assets/sticker.png'),
-                loadTex('assets/metal.png')
+                loadTex('assets/metal.png'),
+                loadTex('assets/plastic_white.png'),
+                loadTex('assets/plastic_black.png'),
+                loadTex('assets/copper.png')
             ]);
 
             // Texturas Procedurais (Fallback ou Auxiliares)
@@ -404,11 +413,31 @@
                 color: 0xffffff, roughness: 0.2, metalness: 0.8
             });
 
-            mats.blackMetal = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3, metalness: 0.9 });
-            mats.whitePlastic = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.1 });
+            // Black Metal (Darkened Metal Texture)
+            mats.blackMetal = new THREE.MeshStandardMaterial({
+                map: metalTex,
+                color: 0x222222, roughness: 0.3, metalness: 0.9
+            });
+
+            // White Plastic
+            mats.whitePlastic = new THREE.MeshStandardMaterial({
+                map: whitePlasTex,
+                color: 0xffffff, roughness: 0.3, metalness: 0.1
+            });
+
+            // Black Plastic
+            mats.blackPlastic = new THREE.MeshStandardMaterial({
+                map: blackPlasTex,
+                color: 0x111111, roughness: 0.6, metalness: 0.1
+            });
+
+            // Copper
+            mats.copper = new THREE.MeshStandardMaterial({
+                map: copperTex,
+                color: 0xffaa77, roughness: 0.25, metalness: 1.0
+            });
+
             mats.alum = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.3, metalness: 0.8 });
-            mats.copper = new THREE.MeshStandardMaterial({ color: 0xffaa77, roughness: 0.25, metalness: 1.0 });
-            mats.blackPlastic = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.6, metalness: 0.1 });
             mats.fins = new THREE.MeshStandardMaterial({ map: finsTex, color: 0xdddddd, roughness: 0.5, metalness: 0.6 });
             mats.rgbH = new THREE.MeshStandardMaterial({ map: rgbTextureH, emissive: 0xffffff, emissiveMap: rgbTextureH, emissiveIntensity: 2.5, roughness: 0.2, metalness: 0.0 });
 
