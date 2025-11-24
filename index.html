@@ -247,7 +247,7 @@
         import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
         import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-        let camera, scene, renderer;
+        let camera, scene, renderer, controls;
         let contentGroup, reticle;
         let hitTestSource = null, hitTestSourceRequested = false;
         let objectPlaced = false;
@@ -257,135 +257,103 @@
         let rgbTextureH, rgbTextureV;
         const mats = {};
 
-        // Helper para "respirar" a UI (Yield)
-        const yieldToMain = () => new Promise(resolve => setTimeout(resolve, 0));
-
-        try { init(); animate(); } catch (e) { console.error(e); }
-
-        async function init() {
-            const container = document.createElement('div');
-            document.body.appendChild(container);
-
-            // Step 1: Basic Scene
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
-            camera.position.set(0, 0.3, 0.5); // Initial Preview Position
-            await yieldToMain();
-
-            // Step 2: Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.xr.enabled = true;
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.0;
-            container.appendChild(renderer.domElement);
-            await yieldToMain();
-
-        }
-
-        async function createMaterials() {
-            const loader = new THREE.TextureLoader();
-
-            // Helper para carregar textura como Promise
-            const loadTex = (path) => new Promise(resolve => {
-                loader.load(path, (tex) => {
-                    tex.colorSpace = THREE.SRGBColorSpace;
-                    resolve(tex);
-                }, undefined, () => {
-                    console.warn(`Falha ao carregar ${path}, usando fallback.`);
-                    resolve(null);
-                });
+        // Helper para carregar textura como Promise
+        const loadTex = (path) => new Promise(resolve => {
+            loader.load(path, (tex) => {
+                tex.colorSpace = THREE.SRGBColorSpace;
+                resolve(tex);
+            }, undefined, () => {
+                console.warn(`Falha ao carregar ${path}, usando fallback.`);
+                resolve(null);
             });
+        });
 
-            // Carregar Assets (Async)
-            const [pcbTex, stickerTex, metalTex, whitePlasTex, blackPlasTex, copperTex] = await Promise.all([
-                loadTex('assets/pcb.png'),
-                loadTex('assets/sticker.png'),
-                loadTex('assets/metal.png'),
-                loadTex('assets/plastic_white.png'),
-                loadTex('assets/plastic_black.png'),
-                loadTex('assets/copper.png')
-            ]);
+        // Carregar Assets (Async)
+        const [pcbTex, stickerTex, metalTex, whitePlasTex, blackPlasTex, copperTex] = await Promise.all([
+            loadTex('assets/pcb.png'),
+            loadTex('assets/sticker.png'),
+            loadTex('assets/metal.png'),
+            loadTex('assets/plastic_white.png'),
+            loadTex('assets/plastic_black.png'),
+            loadTex('assets/copper.png')
+        ]);
 
-            // Texturas Procedurais (Fallback ou Auxiliares)
-            const cvsF = document.createElement('canvas'); cvsF.width = 64; cvsF.height = 64;
-            const ctxF = cvsF.getContext('2d');
-            ctxF.fillStyle = '#ccc'; ctxF.fillRect(0, 0, 64, 64);
-            ctxF.fillStyle = '#888';
-            for (let i = 0; i < 64; i += 4) { ctxF.fillRect(i, 0, 2, 64); }
-            const finsTex = new THREE.CanvasTexture(cvsF);
+        // Texturas Procedurais (Fallback ou Auxiliares)
+        const cvsF = document.createElement('canvas'); cvsF.width = 64; cvsF.height = 64;
+        const ctxF = cvsF.getContext('2d');
+        ctxF.fillStyle = '#ccc'; ctxF.fillRect(0, 0, 64, 64);
+        ctxF.fillStyle = '#888';
+        for (let i = 0; i < 64; i += 4) { ctxF.fillRect(i, 0, 2, 64); }
+        const finsTex = new THREE.CanvasTexture(cvsF);
 
-            // RGB Rainbow (Gradient)
-            const cvsH = document.createElement('canvas'); cvsH.width = 256; cvsH.height = 1;
-            const ctxH = cvsH.getContext('2d');
-            const grdH = ctxH.createLinearGradient(0, 0, 256, 0);
-            grdH.addColorStop(0, '#ff0000'); grdH.addColorStop(0.2, '#ffff00'); grdH.addColorStop(0.4, '#00ff00');
-            grdH.addColorStop(0.6, '#00ffff'); grdH.addColorStop(0.8, '#0000ff'); grdH.addColorStop(1, '#ff00ff');
-            ctxH.fillStyle = grdH; ctxH.fillRect(0, 0, 256, 1);
-            rgbTextureH = new THREE.CanvasTexture(cvsH);
-            rgbTextureH.wrapS = THREE.RepeatWrapping;
+        // RGB Rainbow (Gradient)
+        const cvsH = document.createElement('canvas'); cvsH.width = 256; cvsH.height = 1;
+        const ctxH = cvsH.getContext('2d');
+        const grdH = ctxH.createLinearGradient(0, 0, 256, 0);
+        grdH.addColorStop(0, '#ff0000'); grdH.addColorStop(0.2, '#ffff00'); grdH.addColorStop(0.4, '#00ff00');
+        grdH.addColorStop(0.6, '#00ffff'); grdH.addColorStop(0.8, '#0000ff'); grdH.addColorStop(1, '#ff00ff');
+        ctxH.fillStyle = grdH; ctxH.fillRect(0, 0, 256, 1);
+        rgbTextureH = new THREE.CanvasTexture(cvsH);
+        rgbTextureH.wrapS = THREE.RepeatWrapping;
 
-            // MATERIAIS COM ASSETS
+        // MATERIAIS COM ASSETS
 
-            // PCB
-            mats.pcb = new THREE.MeshStandardMaterial({
-                map: pcbTex,
-                color: pcbTex ? 0xffffff : 0x222222,
-                roughness: 0.4, metalness: 0.3
-            });
+        // PCB
+        mats.pcb = new THREE.MeshStandardMaterial({
+            map: pcbTex,
+            color: pcbTex ? 0xffffff : 0x222222,
+            roughness: 0.4, metalness: 0.3
+        });
 
-            // Metal Escovado (Heatsinks)
-            mats.metal = new THREE.MeshStandardMaterial({
-                map: metalTex,
-                color: 0xffffff, roughness: 0.3, metalness: 0.9
-            });
+        // Metal Escovado (Heatsinks)
+        mats.metal = new THREE.MeshStandardMaterial({
+            map: metalTex,
+            color: 0xffffff, roughness: 0.3, metalness: 0.9
+        });
 
-            // Sticker (Usado nos Hubs)
-            mats.sticker = new THREE.MeshStandardMaterial({
-                map: stickerTex,
-                color: 0xffffff, roughness: 0.2, metalness: 0.8
-            });
+        // Sticker (Usado nos Hubs)
+        mats.sticker = new THREE.MeshStandardMaterial({
+            map: stickerTex,
+            color: 0xffffff, roughness: 0.2, metalness: 0.8
+        });
 
-            // Black Metal (Darkened Metal Texture)
-            mats.blackMetal = new THREE.MeshStandardMaterial({
-                map: metalTex,
-                color: 0x222222, roughness: 0.3, metalness: 0.9
-            });
+        // Black Metal (Darkened Metal Texture)
+        mats.blackMetal = new THREE.MeshStandardMaterial({
+            map: metalTex,
+            color: 0x222222, roughness: 0.3, metalness: 0.9
+        });
 
-            // White Plastic
-            mats.whitePlastic = new THREE.MeshStandardMaterial({
-                map: whitePlasTex,
-                color: 0xffffff, roughness: 0.3, metalness: 0.1
-            });
+        // White Plastic
+        mats.whitePlastic = new THREE.MeshStandardMaterial({
+            map: whitePlasTex,
+            color: 0xffffff, roughness: 0.3, metalness: 0.1
+        });
 
-            // Black Plastic
-            mats.blackPlastic = new THREE.MeshStandardMaterial({
-                map: blackPlasTex,
-                color: 0x111111, roughness: 0.6, metalness: 0.1
-            });
+        // Black Plastic
+        mats.blackPlastic = new THREE.MeshStandardMaterial({
+            map: blackPlasTex,
+            color: 0x111111, roughness: 0.6, metalness: 0.1
+        });
 
-            // Copper
-            mats.copper = new THREE.MeshStandardMaterial({
-                map: copperTex,
-                color: 0xffaa77, roughness: 0.25, metalness: 1.0
-            });
+        // Copper
+        mats.copper = new THREE.MeshStandardMaterial({
+            map: copperTex,
+            color: 0xffaa77, roughness: 0.25, metalness: 1.0
+        });
 
-            mats.alum = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.3, metalness: 0.8 });
-            mats.fins = new THREE.MeshStandardMaterial({ map: finsTex, color: 0xdddddd, roughness: 0.5, metalness: 0.6 });
-            mats.rgbH = new THREE.MeshStandardMaterial({ map: rgbTextureH, emissive: 0xffffff, emissiveMap: rgbTextureH, emissiveIntensity: 2.5, roughness: 0.2, metalness: 0.0 });
+        mats.alum = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.3, metalness: 0.8 });
+        mats.fins = new THREE.MeshStandardMaterial({ map: finsTex, color: 0xdddddd, roughness: 0.5, metalness: 0.6 });
+        mats.rgbH = new THREE.MeshStandardMaterial({ map: rgbTextureH, emissive: 0xffffff, emissiveMap: rgbTextureH, emissiveIntensity: 2.5, roughness: 0.2, metalness: 0.0 });
 
-            // Fan Blade Material (Frosted Acrylic)
-            mats.fanBlade = new THREE.MeshPhysicalMaterial({
-                color: 0xffffff, roughness: 0.4, metalness: 0.1,
-                transmission: 0.6, thickness: 0.002, transparent: true, opacity: 0.9
-            });
-            mats.fanBladeBlack = new THREE.MeshPhysicalMaterial({
-                color: 0x222222, roughness: 0.4, metalness: 0.1,
-                transmission: 0.4, thickness: 0.002, transparent: true, opacity: 0.95
-            });
+        // Fan Blade Material (Frosted Acrylic)
+        mats.fanBlade = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff, roughness: 0.4, metalness: 0.1,
+            transmission: 0.6, thickness: 0.002, transparent: true, opacity: 0.9
+        });
+        mats.fanBladeBlack = new THREE.MeshPhysicalMaterial({
+            color: 0x222222, roughness: 0.4, metalness: 0.1,
+            transmission: 0.4, thickness: 0.002, transparent: true, opacity: 0.95
+        });
         }
 
         window.selectModel = function (type) {
