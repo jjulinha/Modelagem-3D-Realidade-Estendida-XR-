@@ -262,80 +262,93 @@
 
         try { init(); animate(); } catch (e) { console.error(e); }
 
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.xr.enabled = true;
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.0;
-        container.appendChild(renderer.domElement);
-        await yieldToMain();
+        async function init() {
+            const container = document.createElement('div');
+            document.body.appendChild(container);
 
-        // Step 3: Environment (Heavy!)
-        const pmremGenerator = new THREE.PMREMGenerator(renderer);
-        scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
-        await yieldToMain();
+            // Step 1: Basic Scene
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+            camera.position.set(0, 0.3, 0.5); // Initial Preview Position
+            await yieldToMain();
 
-        // Step 4: Lights & AR Button
-        const dir = new THREE.DirectionalLight(0xffffff, 2.5);
-        dir.position.set(2, 5, 2); dir.castShadow = true; scene.add(dir);
-        const spot = new THREE.SpotLight(0x00ff88, 8.0);
-        spot.position.set(-2, 3, -1); spot.angle = 0.6; scene.add(spot);
+            // Step 2: Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.xr.enabled = true;
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.0;
+            container.appendChild(renderer.domElement);
+            await yieldToMain();
 
-        document.body.appendChild(ARButton.createButton(renderer, {
-            requiredFeatures: ['hit-test', 'dom-overlay'],
-            domOverlay: { root: document.body }
-        }));
-        await yieldToMain();
+            // Step 3: Environment (Heavy!)
+            const pmremGenerator = new THREE.PMREMGenerator(renderer);
+            scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+            await yieldToMain();
 
-        // Step 5: Materials (Heavy Canvas Ops + Assets)
-        await createMaterials();
-        await yieldToMain();
+            // Step 4: Lights & AR Button
+            const dir = new THREE.DirectionalLight(0xffffff, 2.5);
+            dir.position.set(2, 5, 2); dir.castShadow = true; scene.add(dir);
+            const spot = new THREE.SpotLight(0x00ff88, 8.0);
+            spot.position.set(-2, 3, -1); spot.angle = 0.6; scene.add(spot);
 
-        // Step 6: Content & Logic
-        contentGroup = new THREE.Group();
-        scene.add(contentGroup);
+            document.body.appendChild(ARButton.createButton(renderer, {
+                requiredFeatures: ['hit-test', 'dom-overlay'],
+                domOverlay: { root: document.body }
+            }));
+            await yieldToMain();
 
-        loadObject('mobo'); // Initial Load
+            // Step 5: Materials (Heavy Canvas Ops + Assets)
+            await createMaterials();
+            await yieldToMain();
 
-        reticle = new THREE.Mesh(
-            new THREE.RingGeometry(0.1, 0.11, 32).rotateX(-Math.PI / 2),
-            new THREE.MeshBasicMaterial({ color: 0x00ff88 })
-        );
-        reticle.matrixAutoUpdate = false; reticle.visible = false; scene.add(reticle);
+            // Step 6: Content & Logic
+            contentGroup = new THREE.Group();
+            scene.add(contentGroup);
 
-        const controller = renderer.xr.getController(0);
-        controller.addEventListener('select', onSelect);
-        scene.add(controller);
+            loadObject('mobo'); // Initial Load
 
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.target.set(0, 0.05, 0); controls.enableDamping = true;
+            reticle = new THREE.Mesh(
+                new THREE.RingGeometry(0.1, 0.11, 32).rotateX(-Math.PI / 2),
+                new THREE.MeshBasicMaterial({ color: 0x00ff88 })
+            );
+            reticle.matrixAutoUpdate = false; reticle.visible = false; scene.add(reticle);
 
-        renderer.xr.addEventListener('sessionstart', () => {
-            document.getElementById('ar-guide').style.display = 'block';
-            document.getElementById('header-container').style.opacity = '0';
-            document.getElementById('selection-dock').style.display = 'none';
-            contentGroup.visible = false;
-        });
-        renderer.xr.addEventListener('sessionend', () => {
-            document.getElementById('ar-guide').style.display = 'none';
-            document.getElementById('header-container').style.opacity = '1';
-            document.getElementById('selection-dock').style.display = 'flex';
-            contentGroup.visible = true;
-            contentGroup.position.set(0, 0, 0);
-            camera.position.set(0, 0.3, 0.3); camera.lookAt(0, 0, 0);
+            const controller = renderer.xr.getController(0);
+            controller.addEventListener('select', onSelect);
+            scene.add(controller);
 
-            // FIX: Reset AR Hit Test state
-            hitTestSource = null;
-            hitTestSourceRequested = false;
-            objectPlaced = false;
-            reticle.visible = false;
-        });
+            const controls = new OrbitControls(camera, renderer.domElement);
+            controls.target.set(0, 0.05, 0); controls.enableDamping = true;
 
-        window.addEventListener('resize', onWindowResize);
+            renderer.xr.addEventListener('sessionstart', () => {
+                document.getElementById('ar-guide').style.display = 'block';
+                document.getElementById('header-container').style.opacity = '0';
+                document.getElementById('selection-dock').style.display = 'none';
+                contentGroup.visible = false;
+            });
+            renderer.xr.addEventListener('sessionend', () => {
+                document.getElementById('ar-guide').style.display = 'none';
+                document.getElementById('header-container').style.opacity = '1';
+                document.getElementById('selection-dock').style.display = 'flex';
+                contentGroup.visible = true;
+                contentGroup.position.set(0, 0, 0);
+                camera.position.set(0, 0.3, 0.3); camera.lookAt(0, 0, 0);
 
-        // Done! Hide Loader
-        document.getElementById('loader').style.display = 'none';
+                // FIX: Reset AR Hit Test state
+                hitTestSource = null;
+                hitTestSourceRequested = false;
+                objectPlaced = false;
+                reticle.visible = false;
+            });
+
+            window.addEventListener('resize', onWindowResize);
+
+            // Done! Hide Loader
+            document.getElementById('loader').style.display = 'none';
         }
 
         async function createMaterials() {
