@@ -257,15 +257,21 @@
         let rgbTextureH, rgbTextureV;
         const mats = {};
 
+        // Helper para "respirar" a UI (Yield)
+        const yieldToMain = () => new Promise(resolve => setTimeout(resolve, 0));
+
         try { init(); animate(); } catch (e) { console.error(e); }
 
-        function init() {
+        async function init() {
             const container = document.createElement('div');
             document.body.appendChild(container);
 
+            // Step 1: Basic Scene
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+            await yieldToMain();
 
+            // Step 2: Renderer
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -275,11 +281,14 @@
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
             renderer.toneMappingExposure = 1.0;
             container.appendChild(renderer.domElement);
+            await yieldToMain();
 
+            // Step 3: Environment (Heavy!)
             const pmremGenerator = new THREE.PMREMGenerator(renderer);
             scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+            await yieldToMain();
 
-            // Luzes
+            // Step 4: Lights & AR Button
             const dir = new THREE.DirectionalLight(0xffffff, 2.5);
             dir.position.set(2, 5, 2); dir.castShadow = true; scene.add(dir);
             const spot = new THREE.SpotLight(0x00ff88, 8.0);
@@ -289,13 +298,17 @@
                 requiredFeatures: ['hit-test', 'dom-overlay'],
                 domOverlay: { root: document.body }
             }));
+            await yieldToMain();
 
-            createMaterials();
+            // Step 5: Materials (Heavy Canvas Ops + Assets)
+            await createMaterials();
+            await yieldToMain();
 
+            // Step 6: Content & Logic
             contentGroup = new THREE.Group();
             scene.add(contentGroup);
 
-            loadObject('mobo');
+            loadObject('mobo'); // Initial Load
 
             reticle = new THREE.Mesh(
                 new THREE.RingGeometry(0.1, 0.11, 32).rotateX(-Math.PI / 2),
@@ -326,19 +339,33 @@
             });
 
             window.addEventListener('resize', onWindowResize);
+
+            // Done! Hide Loader
             document.getElementById('loader').style.display = 'none';
         }
 
-        function createMaterials() {
-            // Texturas
-            const cvs = document.createElement('canvas'); cvs.width = 512; cvs.height = 512;
-            const ctx = cvs.getContext('2d');
-            ctx.fillStyle = '#111'; ctx.fillRect(0, 0, 512, 512);
-            ctx.strokeStyle = '#222'; ctx.lineWidth = 2;
-            for (let i = 0; i < 80; i++) { ctx.beginPath(); ctx.moveTo(Math.random() * 512, Math.random() * 512); ctx.lineTo(Math.random() * 512, Math.random() * 512); ctx.stroke(); }
-            const pcbTex = new THREE.CanvasTexture(cvs);
+        async function createMaterials() {
+            const loader = new THREE.TextureLoader();
 
-            // Heatsink Fins Texture (Stripes)
+            // Helper para carregar textura como Promise
+            const loadTex = (path) => new Promise(resolve => {
+                loader.load(path, (tex) => {
+                    tex.colorSpace = THREE.SRGBColorSpace;
+                    resolve(tex);
+                }, undefined, () => {
+                    console.warn(`Falha ao carregar ${path}, usando fallback.`);
+                    resolve(null);
+                });
+            });
+
+            // Carregar Assets (Async)
+            const [pcbTex, stickerTex, metalTex] = await Promise.all([
+                loadTex('assets/pcb.png'),
+                loadTex('assets/sticker.png'),
+                loadTex('assets/metal.png')
+            ]);
+
+            // Texturas Procedurais (Fallback ou Auxiliares)
             const cvsF = document.createElement('canvas'); cvsF.width = 64; cvsF.height = 64;
             const ctxF = cvsF.getContext('2d');
             ctxF.fillStyle = '#ccc'; ctxF.fillRect(0, 0, 64, 64);
@@ -346,18 +373,37 @@
             for (let i = 0; i < 64; i += 4) { ctxF.fillRect(i, 0, 2, 64); }
             const finsTex = new THREE.CanvasTexture(cvsF);
 
-            // RGB Rainbow
-            const cvsH = document.createElement('canvas'); cvsH.width = 512; cvsH.height = 1;
+            // RGB Rainbow (Gradient)
+            const cvsH = document.createElement('canvas'); cvsH.width = 256; cvsH.height = 1;
             const ctxH = cvsH.getContext('2d');
-            const grdH = ctxH.createLinearGradient(0, 0, 512, 0);
+            const grdH = ctxH.createLinearGradient(0, 0, 256, 0);
             grdH.addColorStop(0, '#ff0000'); grdH.addColorStop(0.2, '#ffff00'); grdH.addColorStop(0.4, '#00ff00');
             grdH.addColorStop(0.6, '#00ffff'); grdH.addColorStop(0.8, '#0000ff'); grdH.addColorStop(1, '#ff00ff');
-            ctxH.fillStyle = grdH; ctxH.fillRect(0, 0, 512, 1);
+            ctxH.fillStyle = grdH; ctxH.fillRect(0, 0, 256, 1);
             rgbTextureH = new THREE.CanvasTexture(cvsH);
             rgbTextureH.wrapS = THREE.RepeatWrapping;
 
-            mats.pcb = new THREE.MeshStandardMaterial({ map: pcbTex, color: 0x222222, roughness: 0.4, metalness: 0.3 });
-            mats.metal = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2, metalness: 1.0 });
+            // MATERIAIS COM ASSETS
+
+            // PCB
+            mats.pcb = new THREE.MeshStandardMaterial({
+                map: pcbTex,
+                color: pcbTex ? 0xffffff : 0x222222,
+                roughness: 0.4, metalness: 0.3
+            });
+
+            // Metal Escovado (Heatsinks)
+            mats.metal = new THREE.MeshStandardMaterial({
+                map: metalTex,
+                color: 0xffffff, roughness: 0.3, metalness: 0.9
+            });
+
+            // Sticker (Usado nos Hubs)
+            mats.sticker = new THREE.MeshStandardMaterial({
+                map: stickerTex,
+                color: 0xffffff, roughness: 0.2, metalness: 0.8
+            });
+
             mats.blackMetal = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.3, metalness: 0.9 });
             mats.whitePlastic = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.1 });
             mats.alum = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.3, metalness: 0.8 });
@@ -400,12 +446,16 @@
             if (type === 'ram') buildRAM();
         }
 
-        // --- GEOMETRIA AVANÇADA DE VENTOINHA ---
+        // --- GEOMETRIA AVANÇADA DE VENTOINHA (OTIMIZADA) ---
 
-        function createFanBlade(radius, colorMat) {
-            // Cria uma lâmina curva e aerodinâmica
+        const fanGeomCache = {}; // Cache para reutilizar geometrias
+
+        function getFanBladeGeometry(radius) {
+            const key = radius.toFixed(4);
+            if (fanGeomCache[key]) return fanGeomCache[key];
+
+            console.time(`Generating Fan Geo ${key}`);
             const shape = new THREE.Shape();
-            // Perfil da lâmina (vista de cima)
             shape.moveTo(0, 0);
             shape.bezierCurveTo(radius * 0.2, radius * 0.1, radius * 0.5, radius * 0.4, radius, radius * 0.3);
             shape.bezierCurveTo(radius * 0.9, radius * 0.6, radius * 0.4, radius * 0.5, 0, 0.1);
@@ -415,12 +465,12 @@
             };
 
             const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-            // Ajustar centro e rotação para "twist"
-            geo.translate(0, -0.05 * radius, 0); // Offset do hub
+            geo.translate(0, -0.05 * radius, 0);
+            geo.rotateX(0.2);
 
-            const blade = new THREE.Mesh(geo, colorMat);
-            blade.rotation.x = 0.2; // Ângulo de ataque
-            return blade;
+            fanGeomCache[key] = geo;
+            console.timeEnd(`Generating Fan Geo ${key}`);
+            return geo;
         }
 
         function createFanAssembly(radius, bladeCount, colorMat) {
@@ -432,14 +482,15 @@
             hub.rotation.x = Math.PI / 2;
             group.add(hub);
 
-            // Sticker Holográfico
-            const sticker = new THREE.Mesh(new THREE.CircleGeometry(hubRadius * 0.8, 32), mats.metal);
+            // Sticker Holográfico (Asset)
+            const sticker = new THREE.Mesh(new THREE.CircleGeometry(hubRadius * 0.8, 32), mats.sticker);
             sticker.position.z = 0.005;
             group.add(sticker);
 
-            // Blades
+            // Blades (Cached)
+            const bladeGeo = getFanBladeGeometry(radius);
             for (let i = 0; i < bladeCount; i++) {
-                const blade = createFanBlade(radius, colorMat);
+                const blade = new THREE.Mesh(bladeGeo, colorMat);
                 const pivot = new THREE.Group();
                 pivot.rotation.z = (i / bladeCount) * Math.PI * 2;
                 pivot.add(blade);
@@ -456,16 +507,16 @@
             pcb.receiveShadow = true; g.add(pcb);
 
             // Heatsinks
-            const vrm1 = new THREE.Mesh(new RoundedBoxGeometry(0.04, 0.03, 0.14, 2, 0.002), mats.blackMetal);
+            const vrm1 = new THREE.Mesh(new RoundedBoxGeometry(0.04, 0.03, 0.14, 2, 0.002), mats.metal);
             vrm1.position.set(-0.08, 0.015, -0.05); g.add(vrm1);
             const vrmStrip = new THREE.Mesh(new THREE.BoxGeometry(0.041, 0.004, 0.12), mats.rgbH);
             vrmStrip.position.set(-0.08, 0.031, -0.05); g.add(vrmStrip);
 
-            const vrm2 = new THREE.Mesh(new RoundedBoxGeometry(0.14, 0.03, 0.04, 2, 0.002), mats.blackMetal);
+            const vrm2 = new THREE.Mesh(new RoundedBoxGeometry(0.14, 0.03, 0.04, 2, 0.002), mats.metal);
             vrm2.position.set(0, 0.015, -0.10); g.add(vrm2);
 
             // Chipset
-            const chipset = new THREE.Mesh(new RoundedBoxGeometry(0.08, 0.01, 0.08, 4, 0.005), mats.blackMetal);
+            const chipset = new THREE.Mesh(new RoundedBoxGeometry(0.08, 0.01, 0.08, 4, 0.005), mats.metal);
             chipset.position.set(0.05, 0.01, 0.08); g.add(chipset);
             const eye = new THREE.Mesh(new THREE.PlaneGeometry(0.05, 0.05), mats.rgbH);
             eye.rotation.x = -Math.PI / 2; eye.position.set(0.05, 0.016, 0.08); g.add(eye);
@@ -483,6 +534,86 @@
                 const c = new THREE.Mesh(capGeo, capMat);
                 c.position.set(-0.06, 0.006, 0.05 + (i * 0.015));
                 g.add(c);
+            }
+            g.position.y = 0.05; contentGroup.add(g);
+        }
+
+        function buildCPU_Cooler() {
+            const g = new THREE.Group();
+
+            // Heatsink Tower (Black Fins)
+            const tower = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.14, 0.06), mats.fins);
+            tower.position.y = 0.07; g.add(tower);
+
+            // Heatpipes (Copper)
+            for (let i = 0; i < 4; i++) {
+                const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.14, 16), mats.copper);
+                pipe.position.set(-0.04 + i * 0.026, 0.07, 0);
+                g.add(pipe);
+            }
+
+            // Fan Frame
+            const frame = new THREE.Mesh(new RoundedBoxGeometry(0.125, 0.125, 0.03, 4, 0.005), mats.blackPlastic);
+            frame.position.set(0, 0.07, 0.045); g.add(frame);
+
+            // RGB Ring (Torus)
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.002, 16, 64), mats.rgbH);
+            ring.position.set(0, 0.07, 0.061);
+            g.add(ring);
+
+            // Fan Assembly (Inside Ring)
+            const fan = createFanAssembly(0.052, 9, mats.fanBladeBlack);
+            fan.position.set(0, 0.07, 0.045);
+            fans.push(fan); g.add(fan);
+
+            g.position.y = 0.05; contentGroup.add(g);
+        }
+
+        function buildGPU() {
+            const g = new THREE.Group();
+
+            // PCB
+            const pcb = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.004, 0.12), mats.pcb);
+            g.add(pcb);
+
+            // Heatsink (Visible Depth)
+            const heatsink = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.03, 0.11), mats.fins);
+            heatsink.position.y = -0.02; g.add(heatsink);
+
+            // Shroud (White Armor)
+            const shroud = new THREE.Mesh(new RoundedBoxGeometry(0.29, 0.015, 0.13, 4, 0.005), mats.whitePlastic);
+            shroud.position.y = -0.045; g.add(shroud);
+
+            // Backplate (Metal)
+            const backplate = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.002, 0.12), mats.metal);
+            backplate.position.y = 0.004; g.add(backplate);
+
+            // Fans (3x Smaller, Recessed)
+            for (let i = -1; i <= 1; i++) {
+                const fan = createFanAssembly(0.038, 11, mats.fanBlade);
+                fan.position.set(i * 0.09, -0.045, 0.066); // Recessed
+                fan.rotation.x = -Math.PI / 2;
+                fans.push(fan); g.add(fan);
+
+                // Chrome Ring
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(0.042, 0.001, 16, 32), mats.metal);
+                ring.position.set(i * 0.09, -0.045, 0.066);
+                ring.rotation.x = -Math.PI / 2;
+                g.add(ring);
+            }
+
+            // RGB Strip Side
+            const strip = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.005, 0.005), mats.rgbH);
+            strip.position.set(0, -0.02, 0.065); g.add(strip);
+
+            g.position.y = 0.15; contentGroup.add(g);
+        }
+
+        function buildRAM() {
+            const g = new THREE.Group();
+            for (let i = 0; i < 4; i++) {
+                const stick = new THREE.Group();
+
                 // PCB Black
                 stick.add(new THREE.Mesh(new THREE.BoxGeometry(0.133, 0.035, 0.002), mats.pcb));
 
