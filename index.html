@@ -19,7 +19,7 @@
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
 
     <!-- Styles -->
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=4">
 </head>
 
 <body>
@@ -29,72 +29,69 @@
     <header>
         <div class="logo">HARDWARE.AR</div>
         <nav>
-            <a href="#analysis">Análise</a>
-            <a href="#docs">Documentação</a>
+            <a href="#about">Sobre</a>
+            <a href="#model">Modelo</a>
         </nav>
     </header>
 
     <main>
-        <section class="content-container">
-            <div class="viewer-wrapper">
-                <model-viewer id="ar-viewer" src="assets/simple_motherboard.glb"
-                    alt="Placa-Mãe: Arquitetura e Componentes" shadow-intensity="1.5" shadow-softness="0.8"
-                    camera-controls auto-rotate ar ar-modes="scene-viewer webxr quick-look" ar-scale="auto"
-                    ar-placement="floor" environment-image="assets/environment.png"
-                    skybox-image="assets/environment.png" exposure="1.5" tone-mapping="commerce"
-                    interaction-prompt="auto">
-                    <button class="ar-button" slot="ar-button">
-                        👋 Ver em AR
-                    </button>
-
-                    <div id="ar-prompt">
-                        <img src="https://modelviewer.dev/shared-assets/icons/hand.png">
-                    </div>
-                </model-viewer>
+        <section id="hero" class="hero-section">
+            <div class="hero-content">
+                <h1>Arquitetura de <span class="highlight">Hardware</span></h1>
+                <p>Análise detalhada da Placa-Mãe e seus componentes em Realidade Aumentada.</p>
+                <div class="hero-buttons">
+                    <a href="#model" class="cta-button">Ver Modelo 3D</a>
+                    <a href="#" class="cta-button secondary">Documentação</a>
+                    <a href="#" class="cta-button secondary">Slides</a>
+                </div>
             </div>
+        </section>
 
-            <div class="info-panel">
-                <h1>Arquitetura de Hardware</h1>
-                <div class="theoretical-content">
-                    <h3>Análise do Componente: Placa-Mãe</h3>
-                    <p>
-                        A placa-mãe (motherboard) atua como a espinha dorsal do sistema computacional, interconectando a
-                        Unidade Central de Processamento (CPU), memória volátil (RAM) e interfaces de entrada/saída
-                        (I/O).
-                    </p>
-                    <p>
-                        Este modelo 3D permite a visualização espacial dos barramentos de comunicação, soquetes de
-                        processamento e dissipadores térmicos, fundamentais para a compreensão da arquitetura de
-                        computadores moderna.
-                    </p>
+        <section id="model" class="models-section">
+            <div class="models-container">
+                <div class="viewer-container">
+                    <model-viewer id="ar-viewer" src="assets/simple_motherboard.glb" alt="Placa-Mãe ATX"
+                        shadow-intensity="1.5" shadow-softness="0.8" camera-controls auto-rotate ar
+                        ar-modes="scene-viewer webxr quick-look" ar-scale="fixed" ar-placement="floor"
+                        environment-image="assets/environment.png" skybox-image="assets/environment.png" exposure="1.5"
+                        tone-mapping="commerce" interaction-prompt="auto">
+                        <button class="ar-button" slot="ar-button">
+                            👋 Ver em AR
+                        </button>
+
+                        <div id="ar-prompt">
+                            <img src="https://modelviewer.dev/shared-assets/icons/hand.png">
+                        </div>
+                    </model-viewer>
                 </div>
 
-                <div class="action-buttons">
-                    <a href="#" class="doc-btn primary">
-                        <span class="icon">📊</span> Slides da Apresentação
-                    </a>
-                    <a href="#" class="doc-btn secondary">
-                        <span class="icon">📄</span> Documentação Técnica
-                    </a>
-                </div>
+                <div class="controls-panel">
+                    <h2>Análise Técnica</h2>
+                    <p class="model-description">
+                        <strong>Placa-Mãe (Motherboard):</strong> O componente central que conecta todos os sistemas do
+                        computador.
+                        Observe os barramentos de dados, o soquete da CPU e os slots de memória RAM.
+                        Em AR, você pode visualizar a escala real do componente.
+                    </p>
 
-                <div class="tech-specs">
-                    <h3>Especificações Técnicas</h3>
-                    <ul>
-                        <li>Modelo: ATX Standard Architecture</li>
-                        <li>Visualização: PBR Rendering</li>
-                        <li>Plataforma: WebXR AR Integration</li>
-                    </ul>
+                    <div class="tech-specs">
+                        <h3>Especificações</h3>
+                        <ul>
+                            <li>Fator de Forma: ATX</li>
+                            <li>Visualização: Escala Real (1:1)</li>
+                            <li>Renderização: PBR High-Fidelity</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </section>
     </main>
 
     <footer>
-        <p>Projeto Final - Ciência da Computação | Arquitetura de Computadores</p>
+        <p>Projeto Final - Ciência da Computação</p>
     </footer>
 
-    <script src="app.js?v=3"></script>
+    <script src="app.js?v=4"></script>
 </body>
 
 </html>
