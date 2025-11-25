@@ -5,18 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Análise de Hardware AR</title>
-    <meta name="description"
-        content="Visualização e análise teórica de componentes de hardware em Realidade Aumentada.">
+    <meta name="description" content="Visualização e análise teórica de componentes de hardware em Realidade Aumentada.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&family=Roboto+Mono:wght@400;700&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
 
     <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
 
-    <link rel="stylesheet" href="style.css?v=5">
+    <link rel="stylesheet" href="style.css?v=7">
 </head>
 
 <body>
@@ -52,19 +49,13 @@
                         id="ar-viewer" 
                         src="assets/simple_motherboard.glb" 
                         alt="Placa-Mãe ATX"
-                        
-                        /* AR e Rastreamento */
                         ar 
                         ar-modes="webxr scene-viewer quick-look" 
                         ar-scale="auto" 
                         ar-placement="floor"
-                        
-                        /* Controles e Câmera */
                         camera-controls 
                         auto-rotate
                         touch-action="pan-y"
-                        
-                        /* Iluminação para garantir que apareça */
                         environment-image="neutral" 
                         shadow-intensity="1" 
                         exposure="1.2"
