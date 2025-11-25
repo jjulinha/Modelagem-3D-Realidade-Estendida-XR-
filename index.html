@@ -19,6 +19,27 @@
     src="assets/simple_motherboard.glb" 
     alt="Placa-Mãe ATX"
     
+    ar 
+    ar-modes="webxr scene-viewer quick-look" 
+    ar-scale="auto" 
+    ar-placement="floor"
+    
+    camera-controls 
+    auto-rotate
+    
+    bounds="tight" 
+    
+    environment-image="neutral" 
+    shadow-intensity="1"
+    exposure="1.0"
+
+    skybox-image=""
+    background-color="#333">
+
+    <button class="ar-button" slot="ar-button">
+        👋 Ver em AR
+    </button>
+</model-viewer>    
     /* Configurações de Realidade Aumentada */
     ar 
     ar-modes="webxr scene-viewer quick-look" 
@@ -123,4 +144,5 @@
 </body>
 
 </html>
+
 
