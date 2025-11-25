@@ -205,6 +205,75 @@ nav a {
     transition: color 0.3s;
 }
 
+```css
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-main);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    overflow-x: hidden;
+    line-height: 1.6;
+}
+
+/* Background Effect */
+.background-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('assets/background.png') no-repeat center center/cover;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.background-overlay::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.8) 100%);
+}
+
+/* Header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem 5%;
+    backdrop-filter: blur(10px);
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.logo {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    letter-spacing: 2px;
+}
+
+nav a {
+    color: var(--text-color);
+    text-decoration: none;
+    margin-left: 2rem;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
 nav a:hover {
     color: var(--primary-color);
 }
@@ -241,6 +310,13 @@ nav a:hover {
     opacity: 0.8;
 }
 
+.hero-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
 .cta-button {
     display: inline-block;
     padding: 1rem 2.5rem;
@@ -259,30 +335,51 @@ nav a:hover {
     box-shadow: 0 10px 20px rgba(0, 243, 255, 0.3);
 }
 
-/* Content Container */
-.content-container {
-    min-height: 100vh;
-    padding: 6rem 5%;
-    display: grid;
-    grid-template-columns: 1.2fr 0.8fr;
-    gap: 4rem;
-    align-items: center;
-    max-width: 1400px;
-    margin: 0 auto;
+.cta-button.secondary {
+    background: transparent;
+    border: 1px solid var(--primary-color);
+    box-shadow: none;
 }
 
-/* Viewer Wrapper */
-.viewer-wrapper {
+.cta-button.secondary:hover {
+    background: rgba(0, 243, 255, 0.1);
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+}
+
+/* Models Section */
+.models-section {
+    min-height: 100vh;
+    padding: 6rem 5%;
+    display: flex;
+    align-items: center;
+}
+
+.models-container {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 4rem;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 2rem;
+    backdrop-filter: blur(20px);
+}
+
+/* Viewer */
+.viewer-container {
     height: 600px;
     background: rgba(0, 0, 0, 0.2);
-    border-radius: 20px;
+    border-radius: 15px;
     overflow: hidden;
     position: relative;
     border: 1px solid var(--primary-color);
-    box-shadow: 0 0 30px rgba(0, 243, 255, 0.15);
+    box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
 }
 
-.viewer-wrapper::after {
+.viewer-container::after {
     content: '';
     position: absolute;
     top: 0;
@@ -316,95 +413,30 @@ model-viewer {
     z-index: 20;
 }
 
-/* Info Panel */
-.info-panel {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: 20px;
-    padding: 2.5rem;
-    backdrop-filter: blur(20px);
+/* Controls */
+.controls-panel {
     display: flex;
     flex-direction: column;
     justify-content: center;
 }
 
-.info-panel h1 {
+.controls-panel h2 {
     font-size: 2.5rem;
-    margin-bottom: 1.5rem;
-    color: var(--primary-color);
-    line-height: 1.2;
-}
-
-.theoretical-content h3 {
-    font-family: var(--font-mono);
-    font-size: 1.1rem;
-    color: var(--secondary-color);
     margin-bottom: 1rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    color: var(--primary-color);
 }
 
-.theoretical-content p {
-    margin-bottom: 1.5rem;
-    font-size: 1.05rem;
+.model-description {
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
     opacity: 0.9;
-    text-align: justify;
+    line-height: 1.8;
 }
 
-/* Action Buttons */
-.action-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin: 2rem 0;
-}
-
-.doc-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    padding: 1.2rem;
-    border-radius: 12px;
-    text-decoration: none;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-size: 0.9rem;
-}
-
-.doc-btn .icon {
-    font-size: 1.2rem;
-}
-
-.doc-btn.primary {
-    background: linear-gradient(45deg, var(--secondary-color), var(--primary-color));
-    color: white;
-    box-shadow: 0 4px 15px rgba(0, 243, 255, 0.2);
-}
-
-.doc-btn.primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 243, 255, 0.4);
-}
-
-.doc-btn.secondary {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
-    color: var(--text-color);
-}
-
-.doc-btn.secondary:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: var(--primary-color);
-}
-
-/* Tech Specs */
 .tech-specs {
     border-top: 1px solid var(--glass-border);
     padding-top: 1.5rem;
-    margin-top: auto;
+    margin-top: 2rem;
 }
 
 .tech-specs h3 {
@@ -413,8 +445,7 @@ model-viewer {
     font-size: 0.9rem;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: var(--text-color);
-    opacity: 0.7;
+    color: var(--secondary-color);
 }
 
 .tech-specs ul {
@@ -443,20 +474,18 @@ footer {
 
 /* Responsive */
 @media (max-width: 968px) {
-    .content-container {
+    .models-container {
         grid-template-columns: 1fr;
-        padding-top: 8rem;
+        height: auto;
     }
 
-    .viewer-wrapper {
+    .viewer-container {
         height: 400px;
-    }
-
-    .info-panel h1 {
-        font-size: 2rem;
     }
 
     .hero-content h1 {
         font-size: 2.5rem;
     }
 }
+
+```
