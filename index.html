@@ -14,10 +14,38 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&family=Roboto+Mono:wght@400;700&display=swap"
         rel="stylesheet">
+<model-viewer 
+    id="ar-viewer" 
+    src="assets/simple_motherboard.glb" 
+    alt="Placa-Mãe ATX"
+    
+    /* Configurações de Realidade Aumentada */
+    ar 
+    ar-modes="webxr scene-viewer quick-look" 
+    ar-scale="fixed" 
+    ar-placement="floor"
+    
+    /* Configurações de Câmera e Visualização */
+    camera-controls 
+    touch-action="pan-y"
+    shadow-intensity="1.5" 
+    shadow-softness="0.8" 
+    exposure="1.2"
+    
+    /* Ambiente (Opcional, mas melhora o realismo do metal) */
+    environment-image="neutral"
+    
+    /* Interatividade */
+    interaction-prompt="auto">
 
-    <!-- Model Viewer -->
-    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+    <button class="ar-button" slot="ar-button">
+        👋 Ver no seu ambiente (AR)
+    </button>
 
+    <div id="ar-prompt">
+        <img src="https://modelviewer.dev/shared-assets/icons/hand.png">
+    </div>
+</model-viewer>
     <!-- Styles -->
     <link rel="stylesheet" href="style.css?v=4">
 </head>
@@ -95,3 +123,4 @@
 </body>
 
 </html>
+
